@@ -1,5 +1,5 @@
-import { WhatsAppViewer } from "@/components/whatsapp-viewer";
+import { ReservationsOverview } from "@/components/reservations-overview";
 
-export default function Home() {
-  return <WhatsAppViewer />;
+export default function HomePage() {
+  return <ReservationsOverview />;
 }

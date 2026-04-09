@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Instrument_Sans } from "next/font/google";
+import { DashboardNav } from "@/components/dashboard-nav";
 import "./globals.css";
 
 const instrumentSans = Instrument_Sans({
@@ -14,8 +15,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Twilio WhatsApp Viewer",
-  description: "Visor local y de solo lectura para conversaciones de WhatsApp en Twilio.",
+  title: "Reserva OS",
+  description:
+    "Dashboard operativo para monitorear WhatsApp, agenda diaria y gestion de reservas.",
 };
 
 export default function RootLayout({
@@ -28,7 +30,24 @@ export default function RootLayout({
       lang="es"
       className={`${instrumentSans.variable} ${ibmPlexMono.variable} h-full`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full bg-background text-foreground">
+        <div className="dashboard-frame">
+          <div className="dashboard-grid">
+            <aside className="dashboard-sidebar">
+              <div className="dashboard-sidebar__brand">
+                <p className="dashboard-eyebrow">Reserva OS</p>
+                <h1>Centro de operaciones</h1>
+                <p>
+                  Navegacion UI para mensajeria, agenda diaria y gestion de
+                  reservas conectadas a servicios externos.
+                </p>
+              </div>
+              <DashboardNav />
+            </aside>
+            <main className="dashboard-main">{children}</main>
+          </div>
+        </div>
+      </body>
     </html>
   );
 }

@@ -59,7 +59,11 @@ async function readJson<T>(input: RequestInfo, init?: RequestInit) {
   return payload;
 }
 
-export function WhatsAppViewer() {
+type WhatsAppViewerProps = {
+  embedded?: boolean;
+};
+
+export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [conversationsError, setConversationsError] = useState<string | null>(null);
@@ -170,8 +174,26 @@ export function WhatsAppViewer() {
   }, [messages]);
 
   return (
-    <main className="app-shell">
-      <div className="flex min-h-[calc(100dvh-48px)] w-full flex-col overflow-hidden rounded-[28px] border border-border/70 bg-panel text-foreground panel-shadow lg:h-[calc(100dvh-48px)] lg:min-h-0 lg:grid lg:grid-cols-[340px_minmax(0,1fr)]">
+    <div className={embedded ? "app-shell app-shell--embedded" : "app-shell"}>
+      {embedded ? (
+        <header className="section-intro">
+          <div>
+            <p className="dashboard-eyebrow">Mensajes / WhatsApp</p>
+            <h2>Viewer actual dentro del nuevo sistema</h2>
+            <p>
+              La lectura sigue siendo de solo consulta. Esta pantalla solo
+              cambia de contexto visual para convivir con el dashboard general.
+            </p>
+          </div>
+        </header>
+      ) : null}
+      <div
+        className={`flex w-full flex-col overflow-hidden rounded-[28px] border border-border/70 bg-panel text-foreground panel-shadow lg:grid lg:grid-cols-[340px_minmax(0,1fr)] ${
+          embedded
+            ? "min-h-[720px] lg:h-[calc(100dvh-132px)] lg:min-h-0"
+            : "min-h-[calc(100dvh-48px)] lg:h-[calc(100dvh-48px)] lg:min-h-0"
+        }`}
+      >
         <aside className="flex min-h-[320px] flex-col border-b border-border/80 bg-background-strong/70 lg:min-h-0 lg:h-full lg:border-r lg:border-b-0">
           <div className="border-b border-border/80 px-5 py-5">
             <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted">
@@ -411,6 +433,6 @@ export function WhatsAppViewer() {
           )}
         </section>
       </div>
-    </main>
+    </div>
   );
 }
