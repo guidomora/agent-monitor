@@ -10,12 +10,3 @@ export type ConversationMessage = {
   status: string | null;
   mediaCount: number;
 };
-
-export type ConversationSummary = {
-  id: string;
-  phoneNumber: string;
-  lastMessagePreview: string;
-  lastMessageAt: string | null;
-  lastMessageStatus: string | null;
-  messageCount: number;
-};

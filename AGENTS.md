@@ -38,14 +38,14 @@ Use a feature-oriented architecture.
 
 Recommended structure:
 
-- `src/app`: routes, layouts, page entry points.
-- `src/features`: feature modules such as `messages`, `reservations`, `dashboard`, `customers`.
-- `src/shared`: reusable UI, shared utilities, shared types, generic helpers.
-- `src/infrastructure`: API clients and external integrations.
+- `app`: routes, layouts, page entry points.
+- `features`: feature modules such as `messages`, `reservations`, `dashboard`, `customers`.
+- `shared`: reusable UI, shared utilities, shared types, generic helpers.
+- `infrastructure`: API clients and external integrations.
 
 ### Architectural boundaries
 
-#### `src/app`
+#### `app`
 Use for:
 - Next.js routes
 - layouts
@@ -54,7 +54,7 @@ Use for:
 
 Do not put business logic or heavy data transformation here.
 
-#### `src/features`
+#### `features`
 Each feature should own its:
 - components
 - hooks
@@ -64,11 +64,11 @@ Each feature should own its:
 - feature-specific utilities
 
 Example:
-- `src/features/messages`
-- `src/features/reservations`
-- `src/features/dashboard`
+- `features/messages`
+- `features/reservations`
+- `features/dashboard`
 
-#### `src/shared`
+#### `shared`
 Use for elements that are genuinely reusable across multiple features:
 - UI primitives
 - generic table components
@@ -78,7 +78,7 @@ Use for elements that are genuinely reusable across multiple features:
 
 Do not move code to `shared` too early. If it is only used by one feature, keep it in that feature.
 
-#### `src/infrastructure`
+#### `infrastructure`
 Use for:
 - HTTP client configuration
 - API wrappers
@@ -179,6 +179,26 @@ Avoid vague names like:
 4. Create mapper functions when adapting backend or Twilio responses.
 5. Avoid `any`.
 6. Prefer narrow, specific types over broad generic ones.
+7. Organize types by purpose inside each feature instead of putting all of them in one file.
+
+### Type organization convention
+
+Inside each feature, prefer this structure when it adds clarity:
+
+- `api/*.dto.ts`: raw backend or external API contracts
+- `api/*.api-types.ts`: typed request/response shapes for frontend-facing route handlers or HTTP clients
+- `model/*.types.ts`: feature domain types and reusable internal models
+- `model/*.view-model.ts`: UI-facing models already adapted for rendering
+- `model/*.enums.ts`: enums or semantic unions reused by multiple files
+
+Rules:
+
+- Keep DTOs close to the feature service that consumes them.
+- Keep HTTP response/request contracts out of presentational components when they represent a real API boundary.
+- Keep mappers in the same feature as the DTOs and models they transform.
+- Do not create a global `types` folder for feature-specific contracts.
+- If a component prop type is only used in one component, it can stay in that component.
+- Only move types to `shared` when they are genuinely reused by multiple features.
 
 ---
 

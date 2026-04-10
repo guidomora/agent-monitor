@@ -1,7 +1,7 @@
-import { ReservationsOverview } from "@/components/reservations-overview";
-import { mapReservationsOverview } from "@/lib/reservations/reservations.mapper";
-import { getReservationsByDate } from "@/lib/reservations/reservations.service";
-import type { ReservationOverviewViewModel } from "@/lib/reservations/types";
+import { ReservationsOverview } from "@/features/reservations/components/reservations-overview";
+import { getReservationsByDate } from "@/features/reservations/api/reservations.service";
+import { mapReservationsOverview } from "@/features/reservations/mappers/reservations.mapper";
+import type { ReservationOverviewViewModel } from "@/features/reservations/model/reservation.view-model";
 
 export const dynamic = "force-dynamic";
 

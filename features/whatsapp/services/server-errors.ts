@@ -5,7 +5,7 @@ export function getErrorMessage(error: unknown) {
     return error.message;
   }
 
-  return "Ocurrió un error inesperado.";
+  return "Ocurrio un error inesperado.";
 }
 
 export function getErrorStatus(error: unknown) {

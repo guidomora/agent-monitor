@@ -1,7 +1,7 @@
 "use client";
 
 import { useDeferredValue, useState } from "react";
-import { reservationList } from "@/lib/reservations/mock-data";
+import { reservationList } from "@/features/reservations/data/mock-reservations";
 
 const initialForm = {
   guest: "Martina Ferreyra",

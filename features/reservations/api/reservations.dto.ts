@@ -1,0 +1,24 @@
+export type ReservationApiDto = {
+  date: string;
+  time: string;
+  name: string;
+  phone: string;
+  service: string;
+  quantity: number;
+};
+
+export type ReservationSlotApiDto = {
+  time: string;
+  reserved: number;
+  available: number;
+};
+
+export type ReservationsByDateResponseDto = {
+  date: string;
+  sheetDate: string;
+  reservationsCount: number;
+  totalCapacity: number;
+  totalPeopleReserved: number;
+  reservations: ReservationApiDto[];
+  slots: ReservationSlotApiDto[];
+};

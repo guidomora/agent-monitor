@@ -1,6 +1,6 @@
 import { AxiosError } from "axios";
 import { backendApi } from "@/infrastructure/http/backend-api";
-import type { ReservationsByDateResponse } from "@/lib/reservations/types";
+import type { ReservationsByDateResponseDto } from "@/features/reservations/api/reservations.dto";
 
 type BackendErrorPayload = {
   message?: string | string[];
@@ -10,7 +10,7 @@ type BackendErrorPayload = {
 
 export async function getReservationsByDate(date: string) {
   try {
-    const response = await backendApi.get<ReservationsByDateResponse>(
+    const response = await backendApi.get<ReservationsByDateResponseDto>(
       "bot/reservations",
       {
         params: { date },

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getConversationSummaries } from "@/lib/twilio/messages";
-import { getErrorMessage, getErrorStatus } from "@/lib/twilio/server-errors";
+import { getConversationSummaries } from "@/features/whatsapp/services/conversations.service";
+import { getErrorMessage, getErrorStatus } from "@/features/whatsapp/services/server-errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

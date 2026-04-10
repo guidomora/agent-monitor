@@ -1,6 +1,6 @@
 import "server-only";
 import twilio from "twilio";
-import { getTwilioEnv } from "@/lib/twilio/env";
+import { getTwilioEnv } from "@/infrastructure/twilio/twilio-env";
 
 let client: ReturnType<typeof twilio> | null = null;
 

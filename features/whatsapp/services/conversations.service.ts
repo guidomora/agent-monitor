@@ -1,8 +1,9 @@
 import "server-only";
 import type { MessageInstance } from "twilio/lib/rest/api/v2010/account/message";
-import { getTwilioClient } from "@/lib/twilio/client";
-import { getTwilioEnv } from "@/lib/twilio/env";
-import type { ConversationMessage, ConversationSummary } from "@/lib/twilio/types";
+import { getTwilioClient } from "@/infrastructure/twilio/twilio-client";
+import { getTwilioEnv } from "@/infrastructure/twilio/twilio-env";
+import type { ConversationSummary } from "@/features/whatsapp/model/conversation.types";
+import type { ConversationMessage } from "@/features/whatsapp/model/message.types";
 
 function normalizeAddress(value: string | null | undefined) {
   if (!value) {

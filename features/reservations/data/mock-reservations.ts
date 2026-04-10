@@ -1,20 +1,4 @@
-export type ReservationStatus =
-  | "Confirmada"
-  | "Pendiente"
-  | "Check-in"
-  | "Cancelada";
-
-export type ReservationRecord = {
-  id: string;
-  guest: string;
-  time: string;
-  phone: string;
-  partySize: number;
-  source: string;
-  area: string;
-  notes: string;
-  status: ReservationStatus;
-};
+import type { ReservationRecord } from "@/features/reservations/model/reservation.types";
 
 export const reservationList: ReservationRecord[] = [
   {

@@ -1,17 +1,19 @@
 import type {
   ReservationApiDto,
-  ReservationOverviewViewModel,
   ReservationSlotApiDto,
+  ReservationsByDateResponseDto,
+} from "@/features/reservations/api/reservations.dto";
+import type {
   ReservationTimelineBlock,
   ReservationTimelineItem,
-  ReservationsByDateResponse,
-} from "@/lib/reservations/types";
+} from "@/features/reservations/model/reservation.types";
+import type { ReservationOverviewViewModel } from "@/features/reservations/model/reservation.view-model";
 
 const MOCK_CONVERSATIONS_IN_PROGRESS = "6";
 const MOCK_OCCUPANCY = "27%";
 
 export function mapReservationsOverview(
-  response: ReservationsByDateResponse,
+  response: ReservationsByDateResponseDto,
   currentDate: Date,
 ): ReservationOverviewViewModel {
   return {
@@ -43,11 +45,11 @@ export function mapReservationsOverview(
 }
 
 function getVisibleHourBlocks(
-  response: ReservationsByDateResponse,
+  response: ReservationsByDateResponseDto,
   currentDate: Date,
 ) {
   const groupedReservations = groupReservationsByHour(response.reservations);
-  const minimumVisibleHour = getMinimumVisibleHour(currentDate);
+  const minimumVisibleHour = currentDate.getHours();
 
   return Array.from(groupedReservations.entries())
     .sort(([leftHour], [rightHour]) => leftHour.localeCompare(rightHour))
@@ -110,11 +112,5 @@ function createTimelineBlock(
 }
 
 function normalizeHour(time: string) {
-  const hour = time.slice(0, 2);
-
-  return `${hour}:00`;
-}
-
-function getMinimumVisibleHour(currentDate: Date) {
-  return currentDate.getHours();
+  return `${time.slice(0, 2)}:00`;
 }

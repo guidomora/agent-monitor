@@ -1,19 +1,13 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState, startTransition } from "react";
-import type { ConversationMessage, ConversationSummary } from "@/lib/twilio/types";
-
-type ConversationsResponse = {
-  conversations: ConversationSummary[];
-};
-
-type MessagesResponse = {
-  messages: ConversationMessage[];
-};
-
-type ErrorResponse = {
-  error?: string;
-};
+import type {
+  ApiErrorResponse,
+  ConversationsResponse,
+  MessagesResponse,
+} from "@/features/whatsapp/api/conversations.api-types";
+import type { ConversationSummary } from "@/features/whatsapp/model/conversation.types";
+import type { ConversationMessage } from "@/features/whatsapp/model/message.types";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
   dateStyle: "short",
@@ -50,7 +44,7 @@ async function readJson<T>(input: RequestInfo, init?: RequestInit) {
     },
   });
 
-  const payload = (await response.json()) as T & ErrorResponse;
+  const payload = (await response.json()) as T & ApiErrorResponse;
 
   if (!response.ok) {
     throw new Error(payload.error ?? "No se pudo obtener la informacion.");

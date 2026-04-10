@@ -1,4 +1,4 @@
-import type { ReservationOverviewViewModel } from "@/lib/reservations/types";
+import type { ReservationOverviewViewModel } from "@/features/reservations/model/reservation.view-model";
 
 type ReservationsOverviewProps = {
   formattedHeading: string;
@@ -11,7 +11,6 @@ export function ReservationsOverview({
   overview,
   errorMessage,
 }: ReservationsOverviewProps) {
-
   return (
     <section className="surface-stack">
       <header className="hero-card">
@@ -61,9 +60,7 @@ export function ReservationsOverview({
               <div className="note-card">
                 <span>Sin reservas visibles</span>
                 <strong>No hay reservas para esta ventana horaria</strong>
-                <p>
-                  Se muestran las reservas desde la hora actual en adelante.
-                </p>
+                <p>Se muestran las reservas desde la hora actual en adelante.</p>
               </div>
             ) : null}
             {overview.hourBlocks.map((block) => (
@@ -90,7 +87,6 @@ export function ReservationsOverview({
           </div>
         </article>
       </section>
-
     </section>
   );
 }

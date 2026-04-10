@@ -1,4 +1,4 @@
-import { WhatsAppViewer } from "@/components/whatsapp-viewer";
+import { WhatsAppViewer } from "@/features/whatsapp/components/whatsapp-viewer";
 
 export default function WhatsAppPage() {
   return <WhatsAppViewer embedded />;

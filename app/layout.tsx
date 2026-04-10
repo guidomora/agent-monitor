@@ -28,6 +28,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
+      data-scroll-behavior="smooth"
       className={`${instrumentSans.variable} ${ibmPlexMono.variable} h-full`}
     >
       <body className="min-h-full bg-background text-foreground">
