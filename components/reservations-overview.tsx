@@ -1,8 +1,6 @@
 import {
   reservationDailyStats,
   reservationHourBlocks,
-  reservationList,
-  reservationOperationalNotes,
 } from "@/lib/reservations/mock-data";
 
 function getStatusTone(status: string) {
@@ -22,21 +20,24 @@ function getStatusTone(status: string) {
 }
 
 export function ReservationsOverview() {
+  const currentDate = new Date();
+  const [weekday, date] = new Intl.DateTimeFormat("es-AR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+    .format(currentDate)
+    .split(", ");
+
+  const formattedHeading = `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}\u00A0\u00A0\u00A0${date}`;
+
   return (
     <section className="surface-stack">
       <header className="hero-card">
         <div>
           <p className="dashboard-eyebrow">Dashboard de reservas</p>
-          <h2>Lectura operativa del sistema para el dia actual</h2>
-          <p className="hero-copy">
-            Esta pantalla queda pensada como home del producto. Resume estado
-            general, ritmo de ingresos y puntos de atencion sin depender de
-            graficos.
-          </p>
-        </div>
-        <div className="hero-summary">
-          <span>Origen futuro: backend externo</span>
-          <strong>UI ya preparada para conectar endpoints</strong>
+          <h2>{formattedHeading}</h2>
         </div>
       </header>
 
@@ -50,7 +51,7 @@ export function ReservationsOverview() {
         ))}
       </section>
 
-      <section className="content-grid">
+      <section>
         <article className="panel-card">
           <div className="panel-card__header">
             <div>
@@ -85,58 +86,8 @@ export function ReservationsOverview() {
             ))}
           </div>
         </article>
-
-        <article className="panel-card">
-          <div className="panel-card__header">
-            <div>
-              <p className="dashboard-eyebrow">Alertas operativas</p>
-              <h3>Aspectos que deberia resolver el equipo</h3>
-            </div>
-          </div>
-          <div className="note-list">
-            {reservationOperationalNotes.map((note) => (
-              <div key={note.title} className="note-card">
-                <span>{note.tag}</span>
-                <strong>{note.title}</strong>
-                <p>{note.description}</p>
-              </div>
-            ))}
-          </div>
-        </article>
       </section>
 
-      <section className="panel-card">
-        <div className="panel-card__header">
-          <div>
-            <p className="dashboard-eyebrow">Lista rapida</p>
-            <h3>Reservas del dia con enfoque de supervision</h3>
-          </div>
-          <span className="pill-tag">Mock navegable</span>
-        </div>
-        <div className="table-list">
-          {reservationList.map((reservation) => (
-            <article key={reservation.id} className="table-row">
-              <div>
-                <strong>{reservation.guest}</strong>
-                <p>
-                  {reservation.time} - {reservation.phone}
-                </p>
-              </div>
-              <div>
-                <strong>{reservation.partySize} pax</strong>
-                <p>{reservation.area}</p>
-              </div>
-              <div>
-                <strong>{reservation.source}</strong>
-                <p>{reservation.notes}</p>
-              </div>
-              <span className={`status-chip ${getStatusTone(reservation.status)}`}>
-                {reservation.status}
-              </span>
-            </article>
-          ))}
-        </div>
-      </section>
     </section>
   );
 }

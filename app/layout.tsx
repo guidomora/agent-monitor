@@ -15,7 +15,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Reserva OS",
+  title: "AI Reservations",
   description:
     "Dashboard operativo para monitorear WhatsApp, agenda diaria y gestion de reservas.",
 };
@@ -35,8 +35,7 @@ export default function RootLayout({
           <div className="dashboard-grid">
             <aside className="dashboard-sidebar">
               <div className="dashboard-sidebar__brand">
-                <p className="dashboard-eyebrow">Reserva OS</p>
-                <h1>Centro de operaciones</h1>
+                <h1>AI Reservations</h1>
                 <p>
                   Navegacion UI para mensajeria, agenda diaria y gestion de
                   reservas conectadas a servicios externos.

@@ -53,7 +53,7 @@ async function readJson<T>(input: RequestInfo, init?: RequestInit) {
   const payload = (await response.json()) as T & ErrorResponse;
 
   if (!response.ok) {
-    throw new Error(payload.error ?? "No se pudo obtener la información.");
+    throw new Error(payload.error ?? "No se pudo obtener la informacion.");
   }
 
   return payload;
@@ -151,7 +151,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
       } catch (error) {
         if (!isAbortError(error)) {
           setMessagesError(
-            error instanceof Error ? error.message : "No se pudo cargar la conversación.",
+            error instanceof Error ? error.message : "No se pudo cargar la conversacion.",
           );
           setMessages([]);
         }
@@ -178,12 +178,8 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
       {embedded ? (
         <header className="section-intro">
           <div>
-            <p className="dashboard-eyebrow">Mensajes / WhatsApp</p>
-            <h2>Viewer actual dentro del nuevo sistema</h2>
-            <p>
-              La lectura sigue siendo de solo consulta. Esta pantalla solo
-              cambia de contexto visual para convivir con el dashboard general.
-            </p>
+            <h2>Mensajes</h2>
+            <p>Conversacion entre clientes y el Agente de WhatsApp</p>
           </div>
         </header>
       ) : null}
@@ -197,16 +193,11 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
         <aside className="flex min-h-[320px] flex-col border-b border-border/80 bg-background-strong/70 lg:min-h-0 lg:h-full lg:border-r lg:border-b-0">
           <div className="border-b border-border/80 px-5 py-5">
             <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted">
-              Twilio / WhatsApp
+              WhatsApp
             </p>
             <div className="mt-3 flex items-end justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-semibold tracking-[-0.04em]">
-                  Conversation Viewer
-                </h1>
-                <p className="mt-1 text-sm text-muted">
-                  Solo lectura, agrupado por número.
-                </p>
+                <h1 className="text-2xl font-semibold tracking-[-0.04em]">Chats</h1>
               </div>
               <button
                 type="button"
@@ -240,7 +231,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar número o mensaje..."
+                placeholder="Buscar numero o mensaje..."
                 className="w-full rounded-2xl border border-border bg-panel-strong px-4 py-3 text-sm outline-none transition placeholder:text-muted/80 focus:border-accent/45"
               />
             </label>
@@ -319,7 +310,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <p className="font-mono text-[11px] uppercase tracking-[0.25em] text-muted">
-                    Conversación activa
+                    Conversacion activa
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em]">
                     {selectedConversation.phoneNumber}
@@ -327,7 +318,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                 </div>
                 <div className="text-right">
                   <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted">
-                    Última actividad
+                    Ultima actividad
                   </p>
                   <p className="mt-2 text-sm text-muted">
                     {formatTimestamp(selectedConversation.lastMessageAt)}
@@ -340,7 +331,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                   Panel principal
                 </p>
                 <h2 className="mt-2 text-2xl font-semibold tracking-[-0.05em]">
-                  Seleccioná una conversación
+                  Selecciona una conversacion
                 </h2>
               </div>
             )}
@@ -350,13 +341,13 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
             <div className="flex flex-1 items-center justify-center px-6 py-10">
               <div className="max-w-md rounded-[32px] border border-dashed border-border bg-background px-6 py-10 text-center">
                 <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-muted">
-                  Estado vacío
+                  Estado vacio
                 </p>
                 <h3 className="mt-4 text-3xl font-semibold tracking-[-0.06em]">
-                  Elegí un número para leer el historial.
+                  Elige un numero para leer el historial.
                 </h3>
                 <p className="mt-4 text-sm leading-7 text-muted">
-                  Esta app no envía mensajes ni modifica nada en Twilio. Solo
+                  Esta app no envia mensajes ni modifica nada en Twilio. Solo
                   consulta y agrupa el historial existente.
                 </p>
               </div>
@@ -380,14 +371,14 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
           ) : messagesError ? (
             <div className="flex flex-1 items-center justify-center px-6 py-10">
               <div className="max-w-md rounded-[28px] border border-red-500/30 bg-red-950/40 px-6 py-6 text-sm text-red-200">
-                <p className="font-medium">No se pudo cargar la conversación.</p>
+                <p className="font-medium">No se pudo cargar la conversacion.</p>
                 <p className="mt-2">{messagesError}</p>
               </div>
             </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-1 items-center justify-center px-6 py-10">
               <div className="max-w-md rounded-[28px] border border-dashed border-border bg-background px-6 py-8 text-center text-sm text-muted">
-                No hay mensajes disponibles para este número dentro del rango consultado.
+                No hay mensajes disponibles para este numero dentro del rango consultado.
               </div>
             </div>
           ) : (

@@ -18,24 +18,24 @@ export type ReservationRecord = {
 
 export const reservationDailyStats = [
   {
-    label: "Reservas activas",
+    label: "Reservas tomadas",
     value: "28",
-    detail: "4 ingresos en la proxima hora",
+    detail: "",
   },
   {
-    label: "Cubiertos confirmados",
+    label: "Capacidad total",
     value: "116",
-    detail: "Promedio de 4.1 personas por mesa",
+    detail: "",
   },
   {
-    label: "Pendientes de confirmacion",
+    label: "Conversaciones en curso",
     value: "6",
-    detail: "3 llegaron por WhatsApp hoy",
+    detail: "",
   },
   {
-    label: "No shows estimados",
-    value: "2",
-    detail: "Segmento a revisar con automatizaciones",
+    label: "Ocupacion",
+    value: "27%",
+    detail: "",
   },
 ];
 
@@ -157,26 +157,5 @@ export const reservationHourBlocks = [
         status: "Confirmada",
       },
     ],
-  },
-];
-
-export const reservationOperationalNotes = [
-  {
-    tag: "Capacidad",
-    title: "El privado llega al 100% a las 21:00",
-    description:
-      "Conviene frenar nuevas confirmaciones para ese sector o redirigir desde el formulario.",
-  },
-  {
-    tag: "WhatsApp",
-    title: "Hay 3 consultas sin transformar en reserva",
-    description:
-      "La idea es cruzar luego esta tarjeta con el viewer para convertir conversaciones en acciones.",
-  },
-  {
-    tag: "Seguimiento",
-    title: "2 reservas necesitan reconfirmacion humana",
-    description:
-      "Mock pensado para futuras acciones de llamar, escribir o reasignar mesa desde la misma UI.",
   },
 ];

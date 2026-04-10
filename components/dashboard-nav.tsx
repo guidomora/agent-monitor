@@ -7,20 +7,20 @@ const navigation = [
   {
     href: "/",
     label: "Reservas del dia",
-    kicker: "Dashboard operativo",
-    description: "Vista general sin graficos con ocupacion, agenda y alertas.",
+    kicker: "",
+    description: "",
   },
   {
     href: "/gestion",
-    label: "Gestion CRUD",
-    kicker: "Backoffice UI",
-    description: "Alta, edicion, cancelacion y detalle de reservas.",
+    label: "Gestion de reservas",
+    kicker: "",
+    description: "Crear, borrar o modificar reservas",
   },
   {
     href: "/whatsapp",
-    label: "WhatsApp",
-    kicker: "Canal activo",
-    description: "Viewer actual integrado en la nueva navegacion.",
+    label: "WhatsApp - Mensajes",
+    kicker: "",
+    description: "",
   },
 ];
 
@@ -38,11 +38,13 @@ export function DashboardNav() {
             href={item.href}
             className={`dashboard-nav__link ${isActive ? "is-active" : ""}`}
           >
-            <div className="dashboard-nav__meta">
-              <span>{item.kicker}</span>
-            </div>
+            {item.kicker ? (
+              <div className="dashboard-nav__meta">
+                <span>{item.kicker}</span>
+              </div>
+            ) : null}
             <strong>{item.label}</strong>
-            <p>{item.description}</p>
+            {item.description ? <p>{item.description}</p> : null}
           </Link>
         );
       })}
