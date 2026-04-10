@@ -6,3 +6,9 @@ export function getBackendApiBaseUrl() {
 
   return value.endsWith("/") ? value : `${value}/`;
 }
+
+export function getInternalApiToken() {
+  const value = process.env.INTERNAL_API_TOKEN?.trim();
+
+  return value && value.length > 0 ? value : null;
+}

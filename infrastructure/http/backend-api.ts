@@ -1,5 +1,9 @@
+import "server-only";
 import axios from "axios";
-import { getBackendApiBaseUrl } from "@/infrastructure/http/backend-env";
+import {
+  getBackendApiBaseUrl,
+  getInternalApiToken,
+} from "@/infrastructure/http/backend-env";
 
 export const backendApi = axios.create({
   baseURL: getBackendApiBaseUrl(),
@@ -7,4 +11,14 @@ export const backendApi = axios.create({
   headers: {
     Accept: "application/json",
   },
+});
+
+backendApi.interceptors.request.use((config) => {
+  const internalApiToken = getInternalApiToken();
+
+  if (internalApiToken) {
+    config.headers.set("Authorization", `Bearer ${internalApiToken}`);
+  }
+
+  return config;
 });
