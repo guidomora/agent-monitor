@@ -17,7 +17,8 @@ backendApi.interceptors.request.use((config) => {
   const internalApiToken = getInternalApiToken();
 
   if (internalApiToken) {
-    config.headers.set("Authorization", `Bearer ${internalApiToken}`);
+    config.headers.set("x-internal-api-token", internalApiToken);
+    config.headers.delete("Authorization");
   }
 
   return config;
