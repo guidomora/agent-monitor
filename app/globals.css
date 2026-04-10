@@ -356,6 +356,15 @@ textarea {
   letter-spacing: -0.07em;
 }
 
+.stat-card strong .stat-card__suffix {
+  color: var(--accent-strong);
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  font-family: inherit;
+  text-transform: none;
+}
+
 .panel-card {
   padding: 24px;
 }

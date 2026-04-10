@@ -16,29 +16,6 @@ export type ReservationRecord = {
   status: ReservationStatus;
 };
 
-export const reservationDailyStats = [
-  {
-    label: "Reservas tomadas",
-    value: "28",
-    detail: "",
-  },
-  {
-    label: "Capacidad total",
-    value: "116",
-    detail: "",
-  },
-  {
-    label: "Conversaciones en curso",
-    value: "6",
-    detail: "",
-  },
-  {
-    label: "Ocupacion",
-    value: "27%",
-    detail: "",
-  },
-];
-
 export const reservationList: ReservationRecord[] = [
   {
     id: "r-101",
@@ -94,68 +71,5 @@ export const reservationList: ReservationRecord[] = [
     area: "Ventanal",
     notes: "Consultar alergia a frutos secos.",
     status: "Cancelada",
-  },
-];
-
-export const reservationHourBlocks = [
-  {
-    hour: "19:00",
-    summary: "Apertura del primer flujo de mesas",
-    items: [
-      {
-        id: "block-1",
-        guest: "Tomas Rinaldi",
-        partySize: 2,
-        source: "Web",
-        status: "Confirmada",
-      },
-      {
-        id: "block-2",
-        guest: "Micaela Diaz",
-        partySize: 4,
-        source: "Instagram / DM",
-        status: "Pendiente",
-      },
-    ],
-  },
-  {
-    hour: "20:00",
-    summary: "Pico temprano con mesas grandes",
-    items: [
-      {
-        id: "block-3",
-        guest: "Carla Mendez",
-        partySize: 5,
-        source: "WhatsApp",
-        status: "Pendiente",
-      },
-      {
-        id: "block-4",
-        guest: "Agustin Fava",
-        partySize: 3,
-        source: "Telefono",
-        status: "Confirmada",
-      },
-    ],
-  },
-  {
-    hour: "21:00",
-    summary: "Turno fuerte con check-ins en curso",
-    items: [
-      {
-        id: "block-5",
-        guest: "Julieta Castro",
-        partySize: 6,
-        source: "Manual",
-        status: "Check-in",
-      },
-      {
-        id: "block-6",
-        guest: "Pablo Acosta",
-        partySize: 2,
-        source: "Web",
-        status: "Confirmada",
-      },
-    ],
   },
 ];

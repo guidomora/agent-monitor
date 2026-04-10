@@ -1,36 +1,16 @@
-import {
-  reservationDailyStats,
-  reservationHourBlocks,
-} from "@/lib/reservations/mock-data";
+import type { ReservationOverviewViewModel } from "@/lib/reservations/types";
 
-function getStatusTone(status: string) {
-  if (status === "Confirmada") {
-    return "is-confirmed";
-  }
+type ReservationsOverviewProps = {
+  formattedHeading: string;
+  overview: ReservationOverviewViewModel;
+  errorMessage?: string;
+};
 
-  if (status === "Pendiente") {
-    return "is-pending";
-  }
-
-  if (status === "Check-in") {
-    return "is-active";
-  }
-
-  return "is-cancelled";
-}
-
-export function ReservationsOverview() {
-  const currentDate = new Date();
-  const [weekday, date] = new Intl.DateTimeFormat("es-AR", {
-    weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  })
-    .format(currentDate)
-    .split(", ");
-
-  const formattedHeading = `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}\u00A0\u00A0\u00A0${date}`;
+export function ReservationsOverview({
+  formattedHeading,
+  overview,
+  errorMessage,
+}: ReservationsOverviewProps) {
 
   return (
     <section className="surface-stack">
@@ -42,10 +22,20 @@ export function ReservationsOverview() {
       </header>
 
       <section className="stats-grid" aria-label="Indicadores del dia">
-        {reservationDailyStats.map((stat) => (
+        {overview.stats.map((stat) => (
           <article key={stat.label} className="stat-card">
             <span>{stat.label}</span>
-            <strong>{stat.value}</strong>
+            <strong>
+              {stat.value}
+              {stat.highlightSuffix ? (
+                <span
+                  className="stat-card__suffix"
+                  style={{ color: "var(--accent-strong)" }}
+                >
+                  {stat.highlightSuffix}
+                </span>
+              ) : null}
+            </strong>
             <p>{stat.detail}</p>
           </article>
         ))}
@@ -55,30 +45,43 @@ export function ReservationsOverview() {
         <article className="panel-card">
           <div className="panel-card__header">
             <div>
-              <p className="dashboard-eyebrow">Agenda viva</p>
+              <p className="dashboard-eyebrow">Agenda</p>
               <h3>Reservas distribuidas por tramo horario</h3>
             </div>
-            <span className="pill-tag">Sin analytics</span>
           </div>
+          {errorMessage ? (
+            <div className="note-card">
+              <span>Error de backend</span>
+              <strong>No se pudo actualizar la agenda del dia</strong>
+              <p>{errorMessage}</p>
+            </div>
+          ) : null}
           <div className="timeline-list">
-            {reservationHourBlocks.map((block) => (
+            {overview.hourBlocks.length === 0 ? (
+              <div className="note-card">
+                <span>Sin reservas visibles</span>
+                <strong>No hay reservas para esta ventana horaria</strong>
+                <p>
+                  Se muestran las reservas desde la hora actual en adelante.
+                </p>
+              </div>
+            ) : null}
+            {overview.hourBlocks.map((block) => (
               <div key={block.hour} className="timeline-item">
                 <div className="timeline-item__hour">
                   <strong>{block.hour}</strong>
-                  <span>{block.summary}</span>
+                  <span>{block.reservationSummary}</span>
+                  <span>{block.capacitySummary}</span>
                 </div>
                 <div className="timeline-item__entries">
                   {block.items.map((item) => (
                     <article key={item.id} className="reservation-row">
                       <div>
-                        <strong>{item.guest}</strong>
+                        <strong>{capitalizeWords(item.guest)}</strong>
                         <p>
-                          {item.partySize} personas - {item.source}
+                          {item.time} - {item.partySize} personas - {item.service}
                         </p>
                       </div>
-                      <span className={`status-chip ${getStatusTone(item.status)}`}>
-                        {item.status}
-                      </span>
                     </article>
                   ))}
                 </div>
@@ -90,4 +93,8 @@ export function ReservationsOverview() {
 
     </section>
   );
+}
+
+function capitalizeWords(value: string) {
+  return value.replace(/\b\p{L}/gu, (character) => character.toUpperCase());
 }
