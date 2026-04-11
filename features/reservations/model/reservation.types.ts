@@ -21,9 +21,23 @@ export type ReservationTimelineItem = {
   time: string;
 };
 
+export type ReservationOccupancyTone =
+  | "low"
+  | "medium"
+  | "high"
+  | "full"
+  | "empty";
+
+export type ReservationOccupancyIndicator = {
+  percentage: number;
+  label: string;
+  tone: ReservationOccupancyTone;
+};
+
 export type ReservationTimelineBlock = {
   hour: string;
   reservationSummary: string;
   capacitySummary: string;
+  occupancy: ReservationOccupancyIndicator;
   items: ReservationTimelineItem[];
 };

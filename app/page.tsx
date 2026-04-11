@@ -28,9 +28,10 @@ export default async function HomePage() {
         detail: "",
       },
       {
-        label: "Ocupacion",
-        value: "27%",
+        label: "Ocupacion general",
+        value: "0",
         detail: "",
+        highlightSuffix: "%",
       },
     ],
     hourBlocks: [],

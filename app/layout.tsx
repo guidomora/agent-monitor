@@ -38,8 +38,7 @@ export default function RootLayout({
               <div className="dashboard-sidebar__brand">
                 <h1>AI Reservations</h1>
                 <p>
-                  Navegacion UI para mensajeria, agenda diaria y gestion de
-                  reservas conectadas a servicios externos.
+                  Gestion de las reservas tomadas por el Agente de WhatsApp.
                 </p>
               </div>
               <DashboardNav />

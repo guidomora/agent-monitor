@@ -398,6 +398,13 @@ textarea {
   gap: 8px;
 }
 
+.timeline-item__hour-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
 .timeline-item__hour strong,
 .reservation-row strong,
 .table-row strong,
@@ -405,6 +412,49 @@ textarea {
 .crud-list__item strong {
   font-size: 1rem;
   letter-spacing: -0.04em;
+}
+
+.occupancy-pill {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.occupancy-pill--low {
+  border-color: rgba(74, 133, 20, 0.24);
+  background: rgba(151, 214, 52, 0.26);
+  color: #274d00;
+}
+
+.occupancy-pill--medium {
+  border-color: rgba(201, 153, 37, 0.16);
+  background: rgba(255, 215, 138, 0.2);
+  color: #8d5e00;
+}
+
+.occupancy-pill--high {
+  border-color: rgba(221, 122, 49, 0.16);
+  background: rgba(255, 183, 128, 0.22);
+  color: #a34f10;
+}
+
+.occupancy-pill--full {
+  border-color: rgba(217, 77, 97, 0.18);
+  background: rgba(217, 77, 97, 0.12);
+  color: #a02c40;
+}
+
+.occupancy-pill--empty {
+  border-color: rgba(95, 103, 125, 0.14);
+  background: rgba(95, 103, 125, 0.08);
+  color: var(--muted);
 }
 
 .timeline-item__entries {
@@ -422,6 +472,11 @@ textarea {
 
 .reservation-row {
   grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.reservation-row--empty {
+  border-style: dashed;
+  background: rgba(247, 248, 252, 0.72);
 }
 
 .table-row {

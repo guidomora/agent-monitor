@@ -66,21 +66,37 @@ export function ReservationsOverview({
             {overview.hourBlocks.map((block) => (
               <div key={block.hour} className="timeline-item">
                 <div className="timeline-item__hour">
-                  <strong>{block.hour}</strong>
+                  <div className="timeline-item__hour-header">
+                    <strong>{block.hour}</strong>
+                    <span
+                      className={`occupancy-pill occupancy-pill--${block.occupancy.tone}`}
+                    >
+                      {block.occupancy.label}
+                    </span>
+                  </div>
                   <span>{block.reservationSummary}</span>
                   <span>{block.capacitySummary}</span>
                 </div>
                 <div className="timeline-item__entries">
-                  {block.items.map((item) => (
-                    <article key={item.id} className="reservation-row">
+                  {block.items.length === 0 ? (
+                    <article className="reservation-row reservation-row--empty">
                       <div>
-                        <strong>{capitalizeWords(item.guest)}</strong>
-                        <p>
-                          {item.time} - {item.partySize} personas - {item.service}
-                        </p>
+                        <strong>Sin reservas cargadas</strong>
+                        <p>Este tramo horario todavia no tiene mesas asignadas.</p>
                       </div>
                     </article>
-                  ))}
+                  ) : (
+                    block.items.map((item) => (
+                      <article key={item.id} className="reservation-row">
+                        <div>
+                          <strong>{capitalizeWords(item.guest)}</strong>
+                          <p>
+                            {item.time} - {item.partySize} personas - {item.service}
+                          </p>
+                        </div>
+                      </article>
+                    ))
+                  )}
                 </div>
               </div>
             ))}

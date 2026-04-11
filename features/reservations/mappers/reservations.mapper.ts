@@ -4,18 +4,23 @@ import type {
   ReservationsByDateResponseDto,
 } from "@/features/reservations/api/reservations.dto";
 import type {
+  ReservationOccupancyIndicator,
   ReservationTimelineBlock,
   ReservationTimelineItem,
 } from "@/features/reservations/model/reservation.types";
 import type { ReservationOverviewViewModel } from "@/features/reservations/model/reservation.view-model";
 
 const MOCK_CONVERSATIONS_IN_PROGRESS = "6";
-const MOCK_OCCUPANCY = "27%";
 
 export function mapReservationsOverview(
   response: ReservationsByDateResponseDto,
   currentDate: Date,
 ): ReservationOverviewViewModel {
+  const occupancyPercentage = getOccupancyPercentage(
+    response.totalPeopleReserved,
+    response.totalCapacity,
+  );
+
   return {
     stats: [
       {
@@ -34,8 +39,8 @@ export function mapReservationsOverview(
         detail: "",
       },
       {
-        label: "Ocupacion",
-        value: MOCK_OCCUPANCY.replace("%", ""),
+        label: "Ocupacion general",
+        value: String(occupancyPercentage),
         detail: "",
         highlightSuffix: "%",
       },
@@ -51,18 +56,34 @@ function getVisibleHourBlocks(
   const groupedReservations = groupReservationsByHour(response.reservations);
   const minimumVisibleHour = currentDate.getHours();
 
-  return Array.from(groupedReservations.entries())
-    .sort(([leftHour], [rightHour]) => leftHour.localeCompare(rightHour))
-    .filter(([hour]) => {
-      const numericHour = Number.parseInt(hour.slice(0, 2), 10);
+  const visibleHours = new Set<string>();
 
-      return numericHour >= minimumVisibleHour;
-    })
-    .map(([hour, items]) => {
+  for (const slot of response.slots) {
+    if (isVisibleHour(slot.time, minimumVisibleHour)) {
+      visibleHours.add(slot.time);
+    }
+  }
+
+  for (const hour of groupedReservations.keys()) {
+    if (isVisibleHour(hour, minimumVisibleHour)) {
+      visibleHours.add(hour);
+    }
+  }
+
+  return Array.from(visibleHours)
+    .sort((leftHour, rightHour) => leftHour.localeCompare(rightHour))
+    .map((hour) => {
+      const items = groupedReservations.get(hour) ?? [];
       const slot = response.slots.find((entry) => entry.time === hour);
 
       return createTimelineBlock(hour, items, slot);
     });
+}
+
+function isVisibleHour(hour: string, minimumVisibleHour: number) {
+  const numericHour = Number.parseInt(hour.slice(0, 2), 10);
+
+  return numericHour >= minimumVisibleHour;
 }
 
 function groupReservationsByHour(reservations: ReservationApiDto[]) {
@@ -95,20 +116,81 @@ function createTimelineBlock(
   const sortedItems = [...items].sort((left, right) =>
     left.time.localeCompare(right.time),
   );
-  const totalReserved = sortedItems.reduce(
+  const totalReservedFromItems = sortedItems.reduce(
     (accumulator, item) => accumulator + item.partySize,
     0,
   );
-  const reserved = slot?.reserved ?? totalReserved;
+  const reserved = slot?.reserved ?? totalReservedFromItems;
+  const totalCapacity = slot ? slot.reserved + slot.available : totalReservedFromItems;
+  const occupancy = createOccupancyIndicator(reserved, totalCapacity);
 
   return {
     hour,
     reservationSummary: `${sortedItems.length} ${
       sortedItems.length === 1 ? "reserva" : "reservas"
     }`,
-    capacitySummary: `${reserved} cubiertos tomados`,
+    capacitySummary:
+      totalCapacity > 0
+        ? `${reserved}/${totalCapacity} cubiertos tomados`
+        : `${reserved} cubiertos tomados`,
+    occupancy,
     items: sortedItems,
   };
+}
+
+function createOccupancyIndicator(
+  reserved: number,
+  totalCapacity: number,
+): ReservationOccupancyIndicator {
+  if (totalCapacity <= 0) {
+    return {
+      percentage: 0,
+      label: "Sin cupo",
+      tone: "empty",
+    };
+  }
+
+  const percentage = getOccupancyPercentage(reserved, totalCapacity);
+
+  if (percentage >= 100) {
+    return {
+      percentage,
+      label: `Ocupacion ${percentage}%`,
+      tone: "full",
+    };
+  }
+
+  if (percentage >= 80) {
+    return {
+      percentage,
+      label: `Ocupacion ${percentage}%`,
+      tone: "high",
+    };
+  }
+
+  if (percentage >= 50) {
+    return {
+      percentage,
+      label: `Ocupacion ${percentage}%`,
+      tone: "medium",
+    };
+  }
+
+  return {
+    percentage,
+    label: `Ocupacion ${percentage}%`,
+    tone: "low",
+  };
+}
+
+function getOccupancyPercentage(reserved: number, totalCapacity: number) {
+  if (totalCapacity <= 0) {
+    return 0;
+  }
+
+  const rawPercentage = (reserved / totalCapacity) * 100;
+
+  return Math.min(100, Math.round(rawPercentage));
 }
 
 function normalizeHour(time: string) {
