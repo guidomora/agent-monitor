@@ -1,7 +1,7 @@
 import type { ReservationStatus } from "@/features/reservations/model/reservation.enums";
 
 export type ReservationRecord = {
-  id: string;
+  date: string;
   guest: string;
   time: string;
   phone: string;
@@ -40,4 +40,21 @@ export type ReservationTimelineBlock = {
   capacitySummary: string;
   occupancy: ReservationOccupancyIndicator;
   items: ReservationTimelineItem[];
+};
+
+export type ReservationAgendaBlock = {
+  hour: string;
+  reservations: ReservationRecord[];
+};
+
+export type ReservationAgendaDay = {
+  date: string;
+  label: string;
+  serviceNotes: string;
+  reservations: ReservationRecord[];
+};
+
+export type ReservationAgendaRange = {
+  minDate: string;
+  maxDate: string;
 };
