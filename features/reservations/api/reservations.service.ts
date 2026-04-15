@@ -3,7 +3,7 @@ import { backendApi } from "@/infrastructure/http/backend-api";
 import type {
   AvailableReservationDatesResponseDto,
   ReservationsByDateResponseDto,
-} from "@/features/reservations/api/reservations.dto";
+} from "@/features/reservations/types/reservations.dto";
 
 type BackendErrorPayload = {
   message?: string | string[];
@@ -51,11 +51,11 @@ function getReservationsErrorMessage(error: unknown) {
     }
 
     if (error.response) {
-      return `No se pudo obtener reservas del backend (${error.response.status}).`;
+      return `No se pudieron obtener las reservas (${error.response.status}).`;
     }
   }
 
-  return "No se pudo obtener reservas del backend.";
+  return "No se pudieron obtener las reservas.";
 }
 
 function getAvailableDatesErrorMessage(error: unknown) {

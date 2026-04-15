@@ -2,7 +2,7 @@ import type {
   ReservationAgendaBlock,
   ReservationAgendaDay,
   ReservationAgendaRange,
-} from "@/features/reservations/model/reservation.types";
+} from "@/features/reservations/types/reservation.types";
 
 export const reservationAgendaRange: ReservationAgendaRange = {
   minDate: "2026-04-09",

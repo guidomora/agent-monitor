@@ -2,13 +2,16 @@ import type {
   ReservationApiDto,
   ReservationSlotApiDto,
   ReservationsByDateResponseDto,
-} from "@/features/reservations/api/reservations.dto";
+} from "@/features/reservations/types/reservations.dto";
 import type {
   ReservationOccupancyIndicator,
   ReservationTimelineBlock,
   ReservationTimelineItem,
-} from "@/features/reservations/model/reservation.types";
-import type { ReservationOverviewViewModel } from "@/features/reservations/model/reservation.view-model";
+} from "@/features/reservations/types/reservation.types";
+import type {
+  ReservationManagementViewModel,
+  ReservationOverviewViewModel,
+} from "@/features/reservations/types/reservation.view-model";
 
 const MOCK_CONVERSATIONS_IN_PROGRESS = "6";
 
@@ -47,6 +50,41 @@ export function mapReservationsOverview(
     ],
     hourBlocks: getVisibleHourBlocks(response, currentDate),
   };
+}
+
+export function mapReservationManagement(
+  response: ReservationsByDateResponseDto,
+): ReservationManagementViewModel {
+  return {
+    date: response.date,
+    formattedDateLabel: formatFullDateLabel(response.date),
+    reservationCount: response.reservationsCount,
+    totalPeopleReserved: response.totalPeopleReserved,
+    totalCapacity: response.totalCapacity,
+    hourBlocks: getAllHourBlocks(response),
+  };
+}
+
+function getAllHourBlocks(response: ReservationsByDateResponseDto) {
+  const groupedReservations = groupReservationsByHour(response.reservations);
+  const allHours = new Set<string>();
+
+  for (const slot of response.slots) {
+    allHours.add(slot.time);
+  }
+
+  for (const hour of groupedReservations.keys()) {
+    allHours.add(hour);
+  }
+
+  return Array.from(allHours)
+    .sort((leftHour, rightHour) => leftHour.localeCompare(rightHour))
+    .map((hour) => {
+      const items = groupedReservations.get(hour) ?? [];
+      const slot = response.slots.find((entry) => entry.time === hour);
+
+      return createTimelineBlock(hour, items, slot);
+    });
 }
 
 function getVisibleHourBlocks(
@@ -195,4 +233,16 @@ function getOccupancyPercentage(reserved: number, totalCapacity: number) {
 
 function normalizeHour(time: string) {
   return `${time.slice(0, 2)}:00`;
+}
+
+function formatFullDateLabel(value: string) {
+  const formatter = new Intl.DateTimeFormat("es-AR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const formatted = formatter.format(new Date(`${value}T12:00:00`));
+
+  return `${formatted.charAt(0).toUpperCase()}${formatted.slice(1)}`;
 }

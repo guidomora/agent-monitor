@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { getAvailableReservationDatesClient } from "@/features/reservations/api/available-dates.client";
-import {
-  getReservationAgendaBlocks,
-  getReservationAgendaDay,
-  reservationAgendaDays,
-} from "@/features/reservations/data/mock-reservations";
+import { getReservationsByDateClient } from "@/features/reservations/api/reservations.client";
+import { mapReservationManagement } from "@/features/reservations/mappers/reservations.mapper";
+import type { ReservationManagementViewModel } from "@/features/reservations/types/reservation.view-model";
 
 const shortDateFormatter = new Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
@@ -21,16 +19,20 @@ const fullDateFormatter = new Intl.DateTimeFormat("es-AR", {
 });
 
 const todayDate = "2026-04-14";
-const fallbackAvailableDates = reservationAgendaDays.map((agendaDay) => agendaDay.date);
 
 export function ReservationsManager() {
-  const [availableDates, setAvailableDates] = useState<string[]>(fallbackAvailableDates);
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [isLoadingDates, setIsLoadingDates] = useState(true);
   const [datesErrorMessage, setDatesErrorMessage] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState(() =>
-    getInitialDate(todayDate, fallbackAvailableDates),
+  const [selectedDate, setSelectedDate] = useState(todayDate);
+  const [reservationsViewModel, setReservationsViewModel] =
+    useState<ReservationManagementViewModel | null>(null);
+  const [isLoadingReservations, setIsLoadingReservations] = useState(true);
+  const [reservationsErrorMessage, setReservationsErrorMessage] = useState<string | null>(
+    null,
   );
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [isDatesModalOpen, setIsDatesModalOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -74,17 +76,67 @@ export function ReservationsManager() {
     };
   }, []);
 
-  const hasSelectedDateAvailable =
-    availableDates.length === 0
-      ? selectedDate === todayDate
-      : availableDates.includes(selectedDate);
-  const selectedDay = hasSelectedDateAvailable
-    ? getReservationAgendaDay(selectedDate)
-    : null;
-  const agendaBlocks = useMemo(
-    () => (hasSelectedDateAvailable ? getReservationAgendaBlocks(selectedDate) : []),
-    [hasSelectedDateAvailable, selectedDate],
-  );
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadReservations() {
+      setIsLoadingReservations(true);
+      setReservationsErrorMessage(null);
+
+      try {
+        const response = await getReservationsByDateClient({ date: selectedDate });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setReservationsViewModel(mapReservationManagement(response));
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setReservationsViewModel(null);
+        setReservationsErrorMessage(
+          error instanceof Error ? error.message : "No se pudieron cargar las reservas.",
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoadingReservations(false);
+        }
+      }
+    }
+
+    void loadReservations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (!isDatesModalOpen) {
+      return undefined;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsDatesModalOpen(false);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isDatesModalOpen]);
+
   const selectedDateIndex = availableDates.findIndex((date) => date === selectedDate);
   const previousDate = availableDates[selectedDateIndex - 1] ?? null;
   const nextDate = availableDates[selectedDateIndex + 1] ?? null;
@@ -98,16 +150,34 @@ export function ReservationsManager() {
           <p className="dashboard-eyebrow">Gestion de reservas</p>
           <h2>Agenda diaria navegable con acciones sobre cada reserva</h2>
           <p className="hero-copy">
-            La navegacion del calendario ahora se alimenta con las fechas
-            disponibles del backend. La carga de reservas por fecha sigue
-            usando la agenda mock hasta el siguiente paso.
+            La navegacion del calendario y la agenda diaria se alimentan desde
+            el backend segun la fecha seleccionada.
           </p>
         </div>
         <div className="hero-summary">
-          <span>Fechas disponibles</span>
-          <strong>
+          <button
+            type="button"
+            className="hero-summary__trigger"
+            onClick={() => {
+              if (!isLoadingDates) {
+                setIsDatesModalOpen(true);
+              }
+            }}
+            disabled={isLoadingDates}
+          >
+            {isLoadingDates ? "Cargando fechas" : "Ver fechas disponibles"}
+          </button>
+          <strong className="hero-summary__range">
             {minimumAvailableDate && maximumAvailableDate
-              ? `${formatCompactDate(minimumAvailableDate)} al ${formatCompactDate(maximumAvailableDate)}`
+              ? (
+                <>
+                  {formatCompactDate(minimumAvailableDate)}
+                  <span className="hero-summary__separator" aria-hidden="true">
+                    al
+                  </span>
+                  {formatCompactDate(maximumAvailableDate)}
+                </>
+              )
               : "Sin fechas habilitadas"}
           </strong>
           <p className="hero-copy">
@@ -123,47 +193,34 @@ export function ReservationsManager() {
           <div className="panel-card__header">
             <div>
               <p className="dashboard-eyebrow">Agenda</p>
-              <h3>{selectedDay?.label ?? "Fecha sin agenda"}</h3>
+              <h3>
+                {reservationsViewModel?.formattedDateLabel ??
+                  formatLongDate(selectedDate)}
+              </h3>
             </div>
           </div>
 
           {datesErrorMessage ? (
             <div className="management-feedback management-feedback--muted" role="status">
-              {datesErrorMessage} Se muestra la fecha actual como referencia, pero la
-              navegacion de fechas queda deshabilitada hasta recuperar la agenda real.
+              {datesErrorMessage} Se mantiene la fecha actual como referencia hasta
+              recuperar la agenda real.
             </div>
           ) : null}
 
           <div className="schedule-toolbar">
-            <div className="schedule-toolbar__actions">
-              <button
-                type="button"
-                className="action-button"
-                onClick={() => {
-                  if (previousDate) {
-                    handleDateChange(previousDate, availableDates, setSelectedDate);
-                    setPendingAction(null);
-                  }
-                }}
-                disabled={!previousDate || isLoadingDates}
-              >
-                Dia anterior
-              </button>
-
-              <button
-                type="button"
-                className="action-button"
-                onClick={() => {
-                  if (nextDate) {
-                    handleDateChange(nextDate, availableDates, setSelectedDate);
-                    setPendingAction(null);
-                  }
-                }}
-                disabled={!nextDate || isLoadingDates}
-              >
-                Dia siguiente
-              </button>
-            </div>
+            <button
+              type="button"
+              className="action-button action-button--compact schedule-toolbar__nav-button"
+              onClick={() => {
+                if (previousDate) {
+                  handleDateChange(previousDate, availableDates, setSelectedDate);
+                  setPendingAction(null);
+                }
+              }}
+              disabled={!previousDate || isLoadingDates}
+            >
+              &lt; Dia anterior
+            </button>
 
             <label className="schedule-date-field">
               <span>Fecha seleccionada</span>
@@ -182,70 +239,98 @@ export function ReservationsManager() {
               />
             </label>
 
-            <details className="available-dates-popover">
-              <summary className="action-button">
-                {isLoadingDates ? "Cargando fechas" : "Ver fechas disponibles"}
-              </summary>
-              <div className="available-dates-list">
-                {availableDates.length === 0 ? (
-                  <p className="hero-copy">No hay fechas disponibles.</p>
-                ) : (
-                  availableDates.map((availableDate) => (
-                    <button
-                      key={availableDate}
-                      type="button"
-                      className={`available-date-chip${
-                        availableDate === selectedDate ? " is-active" : ""
-                      }`}
-                      onClick={() => {
-                        handleDateChange(
-                          availableDate,
-                          availableDates,
-                          setSelectedDate,
-                        );
-                        setPendingAction(null);
-                      }}
-                    >
-                      {formatLongDate(availableDate)}
-                    </button>
-                  ))
-                )}
-              </div>
-            </details>
+            <button
+              type="button"
+              className="action-button action-button--compact schedule-toolbar__nav-button schedule-toolbar__nav-button--next"
+              onClick={() => {
+                if (nextDate) {
+                  handleDateChange(nextDate, availableDates, setSelectedDate);
+                  setPendingAction(null);
+                }
+              }}
+              disabled={!nextDate || isLoadingDates}
+            >
+              Dia siguiente &gt;
+            </button>
           </div>
 
+          {reservationsErrorMessage ? (
+            <div className="note-card">
+              <span>Error</span>
+              <strong>No se pudo cargar la agenda de la fecha seleccionada</strong>
+              <p>{reservationsErrorMessage}</p>
+            </div>
+          ) : null}
+
+          {reservationsViewModel ? (
+            <div className="stats-grid" aria-label="Resumen de reservas para la fecha">
+              <article className="stat-card">
+                <span>Reservas tomadas</span>
+                <strong>{reservationsViewModel.reservationCount}</strong>
+                <p>Reservas cargadas para la fecha elegida.</p>
+              </article>
+              <article className="stat-card">
+                <span>Cubiertos reservados</span>
+                <strong>{reservationsViewModel.totalPeopleReserved}</strong>
+                <p>Suma de personas entre todas las reservas del dia.</p>
+              </article>
+              <article className="stat-card">
+                <span>Capacidad total</span>
+                <strong>{reservationsViewModel.totalCapacity}</strong>
+                <p>Cupo total informado por la agenda del backend.</p>
+              </article>
+            </div>
+          ) : null}
+
           <div className="timeline-list">
-            {agendaBlocks.length === 0 ? (
+            {isLoadingReservations ? (
+              <div className="note-card">
+                <span>Cargando agenda</span>
+                <strong>Consultando reservas para {formatLongDate(selectedDate)}</strong>
+                <p>Esperando respuesta del backend para actualizar la grilla.</p>
+              </div>
+            ) : null}
+
+            {!isLoadingReservations &&
+            !reservationsErrorMessage &&
+            reservationsViewModel?.hourBlocks.length === 0 ? (
               <div className="note-card">
                 <span>Agenda sin bloques</span>
-                <strong>No hay reservas mockeadas para la fecha seleccionada</strong>
+                <strong>No hay reservas para la fecha seleccionada</strong>
                 <p>
-                  La fecha puede venir del backend y estar habilitada para
-                  navegar, aunque todavia no tengamos reservas locales cargadas
-                  para mostrar en esta pantalla.
+                  La fecha esta habilitada en agenda, pero no devolvio reservas ni
+                  franjas con ocupacion visible.
                 </p>
               </div>
-            ) : (
-              agendaBlocks.map((block) => (
+            ) : null}
+
+            {!isLoadingReservations &&
+            !reservationsErrorMessage &&
+            reservationsViewModel ? (
+              reservationsViewModel.hourBlocks.map((block) => (
                 <div key={block.hour} className="timeline-item timeline-item--management">
                   <div className="timeline-item__hour">
                     <div className="timeline-item__hour-header">
                       <strong>{block.hour}</strong>
                     </div>
-                    <span>
-                      {block.reservations.reduce(
-                        (total, reservation) => total + reservation.partySize,
-                        0,
-                      )}{" "}
-                      cubiertos asignados
-                    </span>
+                    <span>{block.capacitySummary}</span>
+                    <span>{block.reservationSummary}</span>
                   </div>
 
                   <div className="timeline-item__entries">
-                    {block.reservations.map((reservation) => {
+                    {block.items.length === 0 ? (
+                      <article className="reservation-row reservation-row--empty">
+                        <div>
+                          <strong>Sin reservas cargadas</strong>
+                          <p>La franja existe en agenda, pero todavia no tiene mesas asignadas.</p>
+                        </div>
+                      </article>
+                    ) : null}
+
+                    {block.items.map((reservation) => {
                       return (
                         <article
-                          key={`${reservation.date}-${reservation.phone}-${reservation.time}`}
+                          key={reservation.id}
                           className="reservation-card"
                         >
                           <button
@@ -257,9 +342,7 @@ export function ReservationsManager() {
                             <strong>{reservation.guest}</strong>
                             <p>{reservation.partySize} personas</p>
                             <p>{reservation.phone}</p>
-                            <p>{reservation.area}</p>
-                            <p>{reservation.source}</p>
-                            <p className="reservation-card__notes">{reservation.notes}</p>
+                            <p>{reservation.service}</p>
                           </button>
 
                           <div className="reservation-card__actions">
@@ -292,7 +375,7 @@ export function ReservationsManager() {
                   </div>
                 </div>
               ))
-            )}
+            ) : null}
           </div>
         </article>
       </section>
@@ -300,6 +383,64 @@ export function ReservationsManager() {
       {pendingAction ? (
         <div className="management-feedback" role="status">
           {pendingAction}
+        </div>
+      ) : null}
+
+      {isDatesModalOpen ? (
+        <div
+          className="modal-overlay"
+          role="presentation"
+          onClick={() => setIsDatesModalOpen(false)}
+        >
+          <div
+            className="dates-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="available-dates-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="dates-modal__header">
+              <div>
+                <p className="dashboard-eyebrow">Agenda</p>
+                <h3 id="available-dates-modal-title">Fechas disponibles</h3>
+              </div>
+              <button
+                type="button"
+                className="dates-modal__close"
+                aria-label="Cerrar modal de fechas"
+                onClick={() => setIsDatesModalOpen(false)}
+              >
+                X
+              </button>
+            </div>
+
+            <div className="available-dates-list available-dates-list--modal">
+              {availableDates.length === 0 ? (
+                <p className="hero-copy">No hay fechas disponibles.</p>
+              ) : (
+                availableDates.map((availableDate) => (
+                  <button
+                    key={availableDate}
+                    type="button"
+                    className={`available-date-chip${
+                      availableDate === selectedDate ? " is-active" : ""
+                    }`}
+                    onClick={() => {
+                      handleDateChange(
+                        availableDate,
+                        availableDates,
+                        setSelectedDate,
+                      );
+                      setPendingAction(null);
+                      setIsDatesModalOpen(false);
+                    }}
+                  >
+                    {formatLongDate(availableDate)}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       ) : null}
     </section>
@@ -325,7 +466,7 @@ function handleDateChange(
   availableDates: string[],
   setSelectedDate: (value: string) => void,
 ) {
-  if (!availableDates.includes(nextDate)) {
+  if (availableDates.length > 0 && !availableDates.includes(nextDate)) {
     return;
   }
 

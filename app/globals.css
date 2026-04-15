@@ -285,7 +285,6 @@ textarea {
   background: linear-gradient(180deg, rgba(244, 246, 255, 0.92), rgba(255, 255, 255, 0.86));
 }
 
-.hero-summary span,
 .pill-tag {
   display: inline-flex;
   width: fit-content;
@@ -300,10 +299,68 @@ textarea {
   letter-spacing: 0.16em;
 }
 
+.hero-summary__trigger {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(125, 66, 255, 0.16);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(125, 66, 255, 0.14), rgba(255, 255, 255, 0.96));
+  color: #56339c;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  box-shadow: 0 10px 24px rgba(125, 66, 255, 0.12);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.hero-summary__trigger:hover {
+  transform: translateY(-1px);
+  border-color: rgba(125, 66, 255, 0.28);
+  background: linear-gradient(180deg, rgba(125, 66, 255, 0.18), rgba(255, 255, 255, 0.98));
+  box-shadow: 0 14px 30px rgba(125, 66, 255, 0.16);
+}
+
+.hero-summary__trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
 .hero-summary strong {
   font-size: 1.35rem;
   line-height: 1.25;
   letter-spacing: -0.05em;
+}
+
+.hero-summary__range {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.hero-summary__separator {
+  color: var(--muted);
+  font-size: 0.95em;
+  font-weight: 500;
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .stats-grid,
@@ -664,6 +721,14 @@ textarea {
   color: #a02c40;
 }
 
+.action-button--compact {
+  min-height: 52px;
+  padding: 0 16px;
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
 .section-intro {
   padding: 24px;
 }
@@ -678,20 +743,25 @@ textarea {
 }
 
 .schedule-toolbar {
-  grid-template-columns: minmax(0, auto) minmax(220px, 280px) minmax(0, 1fr);
+  grid-template-columns: max-content minmax(220px, 280px) max-content;
+  justify-content: start;
   align-items: end;
-  margin-bottom: 20px;
-}
-
-.schedule-toolbar__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
 .schedule-date-field {
   display: grid;
   gap: 10px;
+}
+
+.schedule-toolbar__nav-button {
+  width: fit-content;
+  justify-self: start;
+}
+
+.schedule-toolbar__nav-button--next {
+  justify-self: start;
 }
 
 .schedule-date-field span,
@@ -714,33 +784,16 @@ textarea {
   outline: none;
 }
 
-.available-dates-popover {
-  position: relative;
-}
-
-.available-dates-popover summary {
-  list-style: none;
-}
-
-.available-dates-popover summary::-webkit-details-marker {
-  display: none;
-}
-
 .available-dates-list {
-  position: absolute;
-  top: calc(100% + 12px);
-  right: 0;
-  z-index: 10;
   display: grid;
   gap: 10px;
-  min-width: min(100%, 320px);
+  min-width: 0;
   max-height: 320px;
-  padding: 14px;
   overflow-y: auto;
-  border: 1px solid rgba(25, 31, 45, 0.08);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: var(--shadow);
+}
+
+.available-dates-list--modal {
+  padding-right: 4px;
 }
 
 .available-date-chip {
@@ -876,9 +929,64 @@ textarea {
 }
 
 .management-feedback--muted {
+  margin-bottom: 14px;
   border-color: rgba(25, 31, 45, 0.08);
   background: rgba(247, 248, 252, 0.8);
   color: var(--muted);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(9, 11, 18, 0.48);
+}
+
+.dates-modal {
+  width: min(640px, 100%);
+  max-height: min(78vh, 720px);
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(25, 31, 45, 0.08);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 249, 255, 0.98)),
+    rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 70px rgba(25, 31, 45, 0.2);
+}
+
+.dates-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dates-modal__close {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(25, 31, 45, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--foreground);
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.dates-modal__close:hover {
+  transform: translateY(-1px);
+  border-color: rgba(125, 66, 255, 0.2);
 }
 
 @media (max-width: 1199px) {
@@ -931,16 +1039,6 @@ textarea {
     grid-template-columns: 1fr;
   }
 
-  .schedule-toolbar__actions {
-    flex-direction: column;
-  }
-
-  .available-dates-list {
-    position: static;
-    min-width: 0;
-    margin-top: 12px;
-  }
-
   .reservation-card__body {
     grid-template-columns: 1fr;
   }
@@ -962,5 +1060,14 @@ textarea {
   .hero-actions,
   .panel-card__header {
     align-items: stretch;
+  }
+
+  .modal-overlay {
+    padding: 16px;
+  }
+
+  .dates-modal {
+    max-height: 84vh;
+    padding: 20px;
   }
 }

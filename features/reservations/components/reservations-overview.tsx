@@ -1,4 +1,4 @@
-import type { ReservationOverviewViewModel } from "@/features/reservations/model/reservation.view-model";
+import type { ReservationOverviewViewModel } from "@/features/reservations/types/reservation.view-model";
 
 type ReservationsOverviewProps = {
   formattedHeading: string;

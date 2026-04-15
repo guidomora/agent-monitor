@@ -1,4 +1,4 @@
-import type { ReservationStatus } from "@/features/reservations/model/reservation.enums";
+import type { ReservationStatus } from "@/features/reservations/types/reservation.enums";
 
 export type ReservationRecord = {
   date: string;

@@ -1,4 +1,4 @@
-import type { AvailableReservationDatesResponseDto } from "@/features/reservations/api/reservations.dto";
+import type { AvailableReservationDatesResponseDto } from "@/features/reservations/types/reservations.dto";
 
 type AvailableDatesErrorResponse = {
   message?: string;
