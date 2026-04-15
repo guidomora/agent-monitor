@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getAvailableReservationDatesClient } from "@/features/reservations/api/available-dates.client";
 import {
   getReservationAgendaBlocks,
   getReservationAgendaDay,
   reservationAgendaDays,
-  reservationAgendaRange,
 } from "@/features/reservations/data/mock-reservations";
 
 const shortDateFormatter = new Intl.DateTimeFormat("es-AR", {
@@ -13,23 +13,83 @@ const shortDateFormatter = new Intl.DateTimeFormat("es-AR", {
   month: "2-digit",
 });
 
+const fullDateFormatter = new Intl.DateTimeFormat("es-AR", {
+  weekday: "long",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+});
+
 const todayDate = "2026-04-14";
+const fallbackAvailableDates = reservationAgendaDays.map((agendaDay) => agendaDay.date);
 
 export function ReservationsManager() {
-  const initialDate = getInitialDate(todayDate);
-  const [selectedDate, setSelectedDate] = useState(initialDate);
+  const [availableDates, setAvailableDates] = useState<string[]>(fallbackAvailableDates);
+  const [isLoadingDates, setIsLoadingDates] = useState(true);
+  const [datesErrorMessage, setDatesErrorMessage] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState(() =>
+    getInitialDate(todayDate, fallbackAvailableDates),
+  );
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
-  const selectedDay = getReservationAgendaDay(selectedDate);
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAvailableDates() {
+      try {
+        const response = await getAvailableReservationDatesClient();
+
+        if (!isMounted) {
+          return;
+        }
+
+        const nextDates = response.dates;
+
+        setAvailableDates(nextDates);
+        setSelectedDate((currentDate) => getNextSelectedDate(currentDate, nextDates));
+        setDatesErrorMessage(null);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setAvailableDates([]);
+        setSelectedDate(todayDate);
+        setDatesErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar las fechas disponibles.",
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoadingDates(false);
+        }
+      }
+    }
+
+    void loadAvailableDates();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const hasSelectedDateAvailable =
+    availableDates.length === 0
+      ? selectedDate === todayDate
+      : availableDates.includes(selectedDate);
+  const selectedDay = hasSelectedDateAvailable
+    ? getReservationAgendaDay(selectedDate)
+    : null;
   const agendaBlocks = useMemo(
-    () => getReservationAgendaBlocks(selectedDate),
-    [selectedDate],
+    () => (hasSelectedDateAvailable ? getReservationAgendaBlocks(selectedDate) : []),
+    [hasSelectedDateAvailable, selectedDate],
   );
-  const selectedDateIndex = reservationAgendaDays.findIndex(
-    (agendaDay) => agendaDay.date === selectedDate,
-  );
-  const previousDate = reservationAgendaDays[selectedDateIndex - 1]?.date ?? null;
-  const nextDate = reservationAgendaDays[selectedDateIndex + 1]?.date ?? null;
+  const selectedDateIndex = availableDates.findIndex((date) => date === selectedDate);
+  const previousDate = availableDates[selectedDateIndex - 1] ?? null;
+  const nextDate = availableDates[selectedDateIndex + 1] ?? null;
+  const minimumAvailableDate = availableDates[0] ?? "";
+  const maximumAvailableDate = availableDates[availableDates.length - 1] ?? "";
 
   return (
     <section className="surface-stack">
@@ -38,20 +98,22 @@ export function ReservationsManager() {
           <p className="dashboard-eyebrow">Gestion de reservas</p>
           <h2>Agenda diaria navegable con acciones sobre cada reserva</h2>
           <p className="hero-copy">
-            La vista ya responde al dia seleccionado y limita la navegacion al
-            rango disponible. La integracion real con backend queda aislada para
-            el siguiente paso.
+            La navegacion del calendario ahora se alimenta con las fechas
+            disponibles del backend. La carga de reservas por fecha sigue
+            usando la agenda mock hasta el siguiente paso.
           </p>
         </div>
         <div className="hero-summary">
-          <span>Rango mockeado</span>
+          <span>Fechas disponibles</span>
           <strong>
-            {formatCompactDate(reservationAgendaRange.minDate)} al{" "}
-            {formatCompactDate(reservationAgendaRange.maxDate)}
+            {minimumAvailableDate && maximumAvailableDate
+              ? `${formatCompactDate(minimumAvailableDate)} al ${formatCompactDate(maximumAvailableDate)}`
+              : "Sin fechas habilitadas"}
           </strong>
           <p className="hero-copy">
-            Hoy se usa data local para validar UX. Luego este rango vendra del
-            backend.
+            {isLoadingDates
+              ? "Consultando agenda general para habilitar la navegacion."
+              : `${availableDates.length} fechas disponibles para navegar.`}
           </p>
         </div>
       </header>
@@ -65,60 +127,102 @@ export function ReservationsManager() {
             </div>
           </div>
 
+          {datesErrorMessage ? (
+            <div className="management-feedback management-feedback--muted" role="status">
+              {datesErrorMessage} Se muestra la fecha actual como referencia, pero la
+              navegacion de fechas queda deshabilitada hasta recuperar la agenda real.
+            </div>
+          ) : null}
+
           <div className="schedule-toolbar">
-            <button
-              type="button"
-              className="action-button"
-              onClick={() => {
-                if (previousDate) {
-                  handleDateChange(previousDate, setSelectedDate);
-                  setPendingAction(null);
-                }
-              }}
-              disabled={!previousDate}
-            >
-              Dia anterior
-            </button>
+            <div className="schedule-toolbar__actions">
+              <button
+                type="button"
+                className="action-button"
+                onClick={() => {
+                  if (previousDate) {
+                    handleDateChange(previousDate, availableDates, setSelectedDate);
+                    setPendingAction(null);
+                  }
+                }}
+                disabled={!previousDate || isLoadingDates}
+              >
+                Dia anterior
+              </button>
+
+              <button
+                type="button"
+                className="action-button"
+                onClick={() => {
+                  if (nextDate) {
+                    handleDateChange(nextDate, availableDates, setSelectedDate);
+                    setPendingAction(null);
+                  }
+                }}
+                disabled={!nextDate || isLoadingDates}
+              >
+                Dia siguiente
+              </button>
+            </div>
 
             <label className="schedule-date-field">
               <span>Fecha seleccionada</span>
               <input
                 type="date"
-                min={reservationAgendaRange.minDate}
-                max={reservationAgendaRange.maxDate}
+                min={minimumAvailableDate}
+                max={maximumAvailableDate}
                 value={selectedDate}
                 onChange={(event) => {
                   const nextSelectedDate = event.target.value;
 
-                  handleDateChange(nextSelectedDate, setSelectedDate);
+                  handleDateChange(nextSelectedDate, availableDates, setSelectedDate);
                   setPendingAction(null);
                 }}
+                disabled={availableDates.length === 0 || isLoadingDates}
               />
             </label>
 
-            <button
-              type="button"
-              className="action-button"
-              onClick={() => {
-                if (nextDate) {
-                  handleDateChange(nextDate, setSelectedDate);
-                  setPendingAction(null);
-                }
-              }}
-              disabled={!nextDate}
-            >
-              Dia siguiente
-            </button>
+            <details className="available-dates-popover">
+              <summary className="action-button">
+                {isLoadingDates ? "Cargando fechas" : "Ver fechas disponibles"}
+              </summary>
+              <div className="available-dates-list">
+                {availableDates.length === 0 ? (
+                  <p className="hero-copy">No hay fechas disponibles.</p>
+                ) : (
+                  availableDates.map((availableDate) => (
+                    <button
+                      key={availableDate}
+                      type="button"
+                      className={`available-date-chip${
+                        availableDate === selectedDate ? " is-active" : ""
+                      }`}
+                      onClick={() => {
+                        handleDateChange(
+                          availableDate,
+                          availableDates,
+                          setSelectedDate,
+                        );
+                        setPendingAction(null);
+                      }}
+                    >
+                      {formatLongDate(availableDate)}
+                    </button>
+                  ))
+                )}
+              </div>
+            </details>
           </div>
 
           <div className="timeline-list">
             {agendaBlocks.length === 0 ? (
               <div className="note-card">
-                <span>Agenda vacia</span>
-                <strong>No hay reservas para la fecha seleccionada</strong>
+                <span>Agenda sin bloques</span>
+                <strong>No hay reservas mockeadas para la fecha seleccionada</strong>
                 <p>
-                  La fecha se mantiene dentro del rango permitido, pero sin
-                  bloques cargados en este mock.
+                  La fecha puede venir del backend y estar habilitada para
+                  navegar, aunque todavia no tengamos reservas locales cargadas
+                  para mostrar en esta pantalla.
                 </p>
               </div>
             ) : (
@@ -163,7 +267,6 @@ export function ReservationsManager() {
                               type="button"
                               className="action-button"
                               onClick={() => {
-                                setSelectedReservationPhone(reservation.phone);
                                 setPendingAction(
                                   `Editar reservado para ${reservation.guest} (${reservation.phone}).`,
                                 );
@@ -175,7 +278,6 @@ export function ReservationsManager() {
                               type="button"
                               className="action-button action-button--subtle-danger"
                               onClick={() => {
-                                setSelectedReservationPhone(reservation.phone);
                                 setPendingAction(
                                   `Borrar reservado para ${reservation.guest} (${reservation.phone}).`,
                                 );
@@ -204,31 +306,46 @@ export function ReservationsManager() {
   );
 }
 
-function getInitialDate(today: string) {
-  if (today < reservationAgendaRange.minDate) {
-    return reservationAgendaRange.minDate;
+function getInitialDate(today: string, availableDates: string[]) {
+  if (availableDates.length === 0) {
+    return today;
   }
 
-  if (today > reservationAgendaRange.maxDate) {
-    return reservationAgendaRange.maxDate;
+  if (availableDates.includes(today)) {
+    return today;
   }
 
-  return getReservationAgendaDay(today)?.date ?? reservationAgendaDays[0]?.date ?? today;
+  const nextDate = availableDates.find((date) => date >= today);
+
+  return nextDate ?? availableDates[availableDates.length - 1] ?? today;
 }
 
 function handleDateChange(
   nextDate: string,
+  availableDates: string[],
   setSelectedDate: (value: string) => void,
 ) {
-  const agendaDay = getReservationAgendaDay(nextDate);
-
-  if (!agendaDay) {
+  if (!availableDates.includes(nextDate)) {
     return;
   }
 
-  setSelectedDate(agendaDay.date);
+  setSelectedDate(nextDate);
+}
+
+function getNextSelectedDate(currentDate: string, availableDates: string[]) {
+  if (availableDates.includes(currentDate)) {
+    return currentDate;
+  }
+
+  return getInitialDate(todayDate, availableDates);
 }
 
 function formatCompactDate(value: string) {
   return shortDateFormatter.format(new Date(`${value}T12:00:00`));
+}
+
+function formatLongDate(value: string) {
+  const formatted = fullDateFormatter.format(new Date(`${value}T12:00:00`));
+
+  return `${formatted.charAt(0).toUpperCase()}${formatted.slice(1)}`;
 }

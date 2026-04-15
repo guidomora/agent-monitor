@@ -22,3 +22,7 @@ export type ReservationsByDateResponseDto = {
   reservations: ReservationApiDto[];
   slots: ReservationSlotApiDto[];
 };
+
+export type AvailableReservationDatesResponseDto = {
+  dates: string[];
+};
