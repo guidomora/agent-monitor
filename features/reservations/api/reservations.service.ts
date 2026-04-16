@@ -3,6 +3,8 @@ import { backendApi } from "@/infrastructure/http/backend-api";
 import type {
   AvailableReservationDatesResponseDto,
   ReservationsByDateResponseDto,
+  UpdateReservationRequestDto,
+  UpdateReservationResponseDto,
 } from "@/features/reservations/types/reservations.dto";
 
 type BackendErrorPayload = {
@@ -22,7 +24,7 @@ export async function getReservationsByDate(date: string) {
 
     return response.data;
   } catch (error) {
-    throw new Error(getReservationsErrorMessage(error));
+    throw createReservationServiceError(error, "No se pudieron obtener las reservas.");
   }
 }
 
@@ -34,46 +36,56 @@ export async function getAvailableReservationDates() {
 
     return response.data;
   } catch (error) {
-    throw new Error(getAvailableDatesErrorMessage(error));
+    throw createReservationServiceError(
+      error,
+      "No se pudieron obtener las fechas disponibles.",
+    );
   }
 }
 
-function getReservationsErrorMessage(error: unknown) {
-  if (error instanceof AxiosError) {
-    const data = error.response?.data as BackendErrorPayload | undefined;
+export async function updateReservation(payload: UpdateReservationRequestDto) {
+  try {
+    const response = await backendApi.patch<UpdateReservationResponseDto>(
+      "bot/reservations",
+      payload,
+      {
+        timeout: 30000,
+      },
+    );
 
-    if (Array.isArray(data?.message) && data.message.length > 0) {
-      return data.message.join(", ");
-    }
-
-    if (typeof data?.message === "string" && data.message.length > 0) {
-      return data.message;
-    }
-
-    if (error.response) {
-      return `No se pudieron obtener las reservas (${error.response.status}).`;
-    }
+    return response.data;
+  } catch (error) {
+    throw createReservationServiceError(error, "No se pudo actualizar la reserva.");
   }
-
-  return "No se pudieron obtener las reservas.";
 }
 
-function getAvailableDatesErrorMessage(error: unknown) {
+export class ReservationServiceError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "ReservationServiceError";
+  }
+}
+
+function createReservationServiceError(error: unknown, fallbackMessage: string) {
   if (error instanceof AxiosError) {
     const data = error.response?.data as BackendErrorPayload | undefined;
+    const status = error.response?.status ?? 500;
 
     if (Array.isArray(data?.message) && data.message.length > 0) {
-      return data.message.join(", ");
+      return new ReservationServiceError(data.message.join(", "), status);
     }
 
     if (typeof data?.message === "string" && data.message.length > 0) {
-      return data.message;
+      return new ReservationServiceError(data.message, status);
     }
 
     if (error.response) {
-      return `No se pudieron obtener las fechas disponibles (${error.response.status}).`;
+      return new ReservationServiceError(`${fallbackMessage} (${error.response.status}).`, status);
     }
   }
 
-  return "No se pudieron obtener las fechas disponibles.";
+  return new ReservationServiceError(fallbackMessage, 500);
 }

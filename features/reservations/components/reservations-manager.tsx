@@ -2,9 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { getAvailableReservationDatesClient } from "@/features/reservations/api/available-dates.client";
-import { getReservationsByDateClient } from "@/features/reservations/api/reservations.client";
+import {
+  getReservationsByDateClient,
+  updateReservationClient,
+} from "@/features/reservations/api/reservations.client";
+import { ChevronLeftIcon } from "@/features/reservations/components/chevron-left-icon";
+import { ChevronRightIcon } from "@/features/reservations/components/chevron-right-icon";
+import { ReservationEditModal } from "@/features/reservations/components/reservation-edit-modal";
 import { mapReservationManagement } from "@/features/reservations/mappers/reservations.mapper";
+import type { ReservationEditTarget } from "@/features/reservations/types/reservation-edit.types";
 import type { ReservationManagementViewModel } from "@/features/reservations/types/reservation.view-model";
+import type { UpdateReservationRequestDto } from "@/features/reservations/types/reservations.dto";
 
 const shortDateFormatter = new Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
@@ -18,9 +26,8 @@ const fullDateFormatter = new Intl.DateTimeFormat("es-AR", {
   year: "numeric",
 });
 
-const todayDate = "2026-04-14";
-
 export function ReservationsManager() {
+  const todayDate = getTodayDate();
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [isLoadingDates, setIsLoadingDates] = useState(true);
   const [datesErrorMessage, setDatesErrorMessage] = useState<string | null>(null);
@@ -33,6 +40,27 @@ export function ReservationsManager() {
   );
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isDatesModalOpen, setIsDatesModalOpen] = useState(false);
+  const [reservationToEdit, setReservationToEdit] = useState<ReservationEditTarget | null>(null);
+  const [editErrorMessage, setEditErrorMessage] = useState<string | null>(null);
+  const [isSavingReservation, setIsSavingReservation] = useState(false);
+
+  async function loadReservations(date: string) {
+    setIsLoadingReservations(true);
+    setReservationsErrorMessage(null);
+
+    try {
+      const response = await getReservationsByDateClient({ date });
+
+      setReservationsViewModel(mapReservationManagement(response));
+    } catch (error) {
+      setReservationsViewModel(null);
+      setReservationsErrorMessage(
+        error instanceof Error ? error.message : "No se pudieron cargar las reservas.",
+      );
+    } finally {
+      setIsLoadingReservations(false);
+    }
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -79,7 +107,7 @@ export function ReservationsManager() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadReservations() {
+    void (async () => {
       setIsLoadingReservations(true);
       setReservationsErrorMessage(null);
 
@@ -105,9 +133,7 @@ export function ReservationsManager() {
           setIsLoadingReservations(false);
         }
       }
-    }
-
-    void loadReservations();
+    })();
 
     return () => {
       isMounted = false;
@@ -115,7 +141,9 @@ export function ReservationsManager() {
   }, [selectedDate]);
 
   useEffect(() => {
-    if (!isDatesModalOpen) {
+    const isAnyModalOpen = isDatesModalOpen || reservationToEdit !== null;
+
+    if (!isAnyModalOpen) {
       return undefined;
     }
 
@@ -126,6 +154,9 @@ export function ReservationsManager() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setIsDatesModalOpen(false);
+        if (!isSavingReservation) {
+          closeEditModal();
+        }
       }
     }
 
@@ -135,13 +166,44 @@ export function ReservationsManager() {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isDatesModalOpen]);
+  }, [isDatesModalOpen, reservationToEdit, isSavingReservation]);
 
   const selectedDateIndex = availableDates.findIndex((date) => date === selectedDate);
   const previousDate = availableDates[selectedDateIndex - 1] ?? null;
   const nextDate = availableDates[selectedDateIndex + 1] ?? null;
   const minimumAvailableDate = availableDates[0] ?? "";
   const maximumAvailableDate = availableDates[availableDates.length - 1] ?? "";
+
+  function closeEditModal() {
+    setReservationToEdit(null);
+    setEditErrorMessage(null);
+    setIsSavingReservation(false);
+  }
+
+  async function handleReservationUpdate(payload: UpdateReservationRequestDto) {
+    setIsSavingReservation(true);
+    setEditErrorMessage(null);
+
+    try {
+      const response = await updateReservationClient(payload);
+      const targetDate = payload.date ?? payload.currentDate;
+
+      closeEditModal();
+      setPendingAction(response.message);
+
+      if (targetDate !== selectedDate) {
+        setSelectedDate(targetDate);
+        return;
+      }
+
+      await loadReservations(targetDate);
+    } catch (error) {
+      setEditErrorMessage(
+        error instanceof Error ? error.message : "No se pudo actualizar la reserva.",
+      );
+      setIsSavingReservation(false);
+    }
+  }
 
   return (
     <section className="surface-stack">
@@ -219,7 +281,8 @@ export function ReservationsManager() {
               }}
               disabled={!previousDate || isLoadingDates}
             >
-              &lt; Dia anterior
+              <ChevronLeftIcon />
+              <span>Dia anterior</span>
             </button>
 
             <label className="schedule-date-field">
@@ -250,7 +313,8 @@ export function ReservationsManager() {
               }}
               disabled={!nextDate || isLoadingDates}
             >
-              Dia siguiente &gt;
+              <span>Dia siguiente</span>
+              <ChevronRightIcon />
             </button>
           </div>
 
@@ -350,9 +414,12 @@ export function ReservationsManager() {
                               type="button"
                               className="action-button"
                               onClick={() => {
-                                setPendingAction(
-                                  `Editar reservado para ${reservation.guest} (${reservation.phone}).`,
-                                );
+                                setPendingAction(null);
+                                setEditErrorMessage(null);
+                                setReservationToEdit({
+                                  currentDate: reservationsViewModel.date,
+                                  reservation,
+                                });
                               }}
                             >
                               Editar
@@ -443,6 +510,17 @@ export function ReservationsManager() {
           </div>
         </div>
       ) : null}
+
+      {reservationToEdit ? (
+        <ReservationEditModal
+          availableDates={availableDates}
+          isSubmitting={isSavingReservation}
+          reservationToEdit={reservationToEdit}
+          submitErrorMessage={editErrorMessage}
+          onClose={closeEditModal}
+          onSubmit={handleReservationUpdate}
+        />
+      ) : null}
     </section>
   );
 }
@@ -478,7 +556,7 @@ function getNextSelectedDate(currentDate: string, availableDates: string[]) {
     return currentDate;
   }
 
-  return getInitialDate(todayDate, availableDates);
+  return getInitialDate(getTodayDate(), availableDates);
 }
 
 function formatCompactDate(value: string) {
@@ -489,4 +567,10 @@ function formatLongDate(value: string) {
   const formatted = fullDateFormatter.format(new Date(`${value}T12:00:00`));
 
   return `${formatted.charAt(0).toUpperCase()}${formatted.slice(1)}`;
+}
+
+function getTodayDate() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Argentina/Buenos_Aires",
+  }).format(new Date());
 }

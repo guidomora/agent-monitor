@@ -3,5 +3,9 @@ export type ReservationsByDateQuery = {
 };
 
 export type ReservationsClientErrorResponse = {
-  message?: string;
+  message?: string | string[];
+};
+
+export type UpdateReservationClientErrorResponse = {
+  message?: string | string[];
 };

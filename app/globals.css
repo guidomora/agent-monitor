@@ -448,6 +448,10 @@ textarea {
   gap: 14px;
 }
 
+.stats-grid + .timeline-list {
+  margin-top: 16px;
+}
+
 .timeline-item {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
@@ -935,6 +939,12 @@ textarea {
   color: var(--muted);
 }
 
+.management-feedback--danger {
+  border-color: rgba(217, 77, 97, 0.16);
+  background: rgba(217, 77, 97, 0.1);
+  color: #a02c40;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -943,6 +953,10 @@ textarea {
   place-items: center;
   padding: 24px;
   background: rgba(9, 11, 18, 0.48);
+}
+
+.modal-overlay--busy {
+  cursor: wait;
 }
 
 .dates-modal {
@@ -958,6 +972,380 @@ textarea {
     linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 249, 255, 0.98)),
     rgba(255, 255, 255, 0.96);
   box-shadow: 0 24px 70px rgba(25, 31, 45, 0.2);
+}
+
+.reservation-edit-modal {
+  width: min(720px, 100%);
+}
+
+.reservation-edit-modal__summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.reservation-edit-modal__summary > div {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid rgba(25, 31, 45, 0.06);
+  border-radius: 24px;
+  background: rgba(247, 248, 252, 0.86);
+}
+
+.reservation-edit-modal__summary span {
+  color: var(--muted);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.reservation-edit-modal__summary strong {
+  font-size: 1.1rem;
+  letter-spacing: -0.04em;
+}
+
+.reservation-edit-modal__summary p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.reservation-edit-modal__footer {
+  justify-content: flex-end;
+}
+
+.reservation-edit-modal__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 160px;
+  padding: 20px 18px;
+  border: 1px solid rgba(125, 66, 255, 0.16);
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at top, rgba(200, 255, 47, 0.18), transparent 42%),
+    rgba(125, 66, 255, 0.08);
+  color: #56339c;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
+.reservation-loader {
+  --reservation-loader-duration: 2s;
+  --reservation-loader-hue: 261;
+  display: block;
+  width: 8rem;
+  height: auto;
+}
+
+.reservation-loader__glare-top,
+.reservation-loader__glare-bottom,
+.reservation-loader__model,
+.reservation-loader__motion-thick,
+.reservation-loader__motion-medium,
+.reservation-loader__motion-thin,
+.reservation-loader__sand-drop,
+.reservation-loader__sand-fill,
+.reservation-loader__sand-grain-left,
+.reservation-loader__sand-grain-right,
+.reservation-loader__sand-line-left,
+.reservation-loader__sand-line-right,
+.reservation-loader__sand-mound-top,
+.reservation-loader__sand-mound-bottom {
+  animation-duration: var(--reservation-loader-duration);
+  animation-timing-function: cubic-bezier(0.83, 0, 0.17, 1);
+  animation-iteration-count: infinite;
+}
+
+.reservation-loader__glare-top {
+  animation-name: reservation-loader-glare-top;
+}
+
+.reservation-loader__glare-bottom {
+  animation-name: reservation-loader-glare-bottom;
+}
+
+.reservation-loader__model {
+  animation-name: reservation-loader-flip;
+  transform-origin: 12.25px 16.75px;
+  transform-box: fill-box;
+}
+
+.reservation-loader__motion-thick,
+.reservation-loader__motion-medium,
+.reservation-loader__motion-thin {
+  transform-origin: 26px 26px;
+  transform-box: fill-box;
+}
+
+.reservation-loader__motion-thick {
+  animation-name: reservation-loader-motion-thick;
+}
+
+.reservation-loader__motion-medium {
+  animation-name: reservation-loader-motion-medium;
+}
+
+.reservation-loader__motion-thin {
+  animation-name: reservation-loader-motion-thin;
+}
+
+.reservation-loader__sand-drop {
+  animation-name: reservation-loader-sand-drop;
+}
+
+.reservation-loader__sand-fill {
+  animation-name: reservation-loader-sand-fill;
+}
+
+.reservation-loader__sand-grain-left {
+  animation-name: reservation-loader-sand-grain-left;
+}
+
+.reservation-loader__sand-grain-right {
+  animation-name: reservation-loader-sand-grain-right;
+}
+
+.reservation-loader__sand-line-left {
+  animation-name: reservation-loader-sand-line-left;
+}
+
+.reservation-loader__sand-line-right {
+  animation-name: reservation-loader-sand-line-right;
+}
+
+.reservation-loader__sand-mound-top {
+  animation-name: reservation-loader-sand-mound-top;
+}
+
+.reservation-loader__sand-mound-bottom {
+  animation-name: reservation-loader-sand-mound-bottom;
+  transform-origin: 12.25px 31.5px;
+  transform-box: fill-box;
+}
+
+.reservation-edit-modal__submit {
+  min-width: 180px;
+  padding-inline: 22px;
+}
+
+@keyframes reservation-loader-flip {
+  from {
+    transform: translate(13.75px, 9.25px) rotate(-180deg);
+  }
+
+  24%,
+  to {
+    transform: translate(13.75px, 9.25px) rotate(0);
+  }
+}
+
+@keyframes reservation-loader-glare-top {
+  from {
+    stroke: rgba(255, 255, 255, 0);
+  }
+
+  24%,
+  to {
+    stroke: white;
+  }
+}
+
+@keyframes reservation-loader-glare-bottom {
+  from {
+    stroke: white;
+  }
+
+  24%,
+  to {
+    stroke: rgba(255, 255, 255, 0);
+  }
+}
+
+@keyframes reservation-loader-motion-thick {
+  from {
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0);
+    stroke: rgba(255, 255, 255, 0);
+    stroke-dashoffset: 153.94;
+    transform: rotate(0.67turn);
+  }
+
+  20% {
+    animation-timing-function: cubic-bezier(0.33, 1, 0.67, 1);
+    stroke: rgb(32, 32, 32);
+    stroke-dashoffset: 141.11;
+    transform: rotate(1turn);
+  }
+
+  40%,
+  to {
+    stroke: rgba(255, 255, 255, 0);
+    stroke-dashoffset: 153.94;
+    transform: rotate(1.33turn);
+  }
+}
+
+@keyframes reservation-loader-motion-medium {
+  from,
+  8% {
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0);
+    stroke: rgba(255, 255, 255, 0);
+    stroke-dashoffset: 153.94;
+    transform: rotate(0.5turn);
+  }
+
+  20% {
+    animation-timing-function: cubic-bezier(0.33, 1, 0.67, 1);
+    stroke: white;
+    stroke-dashoffset: 147.53;
+    transform: rotate(0.83turn);
+  }
+
+  32%,
+  to {
+    stroke: rgba(255, 255, 255, 0);
+    stroke-dashoffset: 153.94;
+    transform: rotate(1.17turn);
+  }
+}
+
+@keyframes reservation-loader-motion-thin {
+  from,
+  4% {
+    animation-timing-function: cubic-bezier(0.33, 0, 0.67, 0);
+    stroke: rgba(255, 255, 255, 0);
+    stroke-dashoffset: 153.94;
+    transform: rotate(0.33turn);
+  }
+
+  24% {
+    animation-timing-function: cubic-bezier(0.33, 1, 0.67, 1);
+    stroke: rgb(53, 53, 53);
+    stroke-dashoffset: 134.7;
+    transform: rotate(0.67turn);
+  }
+
+  44%,
+  to {
+    stroke: rgba(255, 255, 255, 0);
+    stroke-dashoffset: 153.94;
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes reservation-loader-sand-drop {
+  from,
+  10% {
+    animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0);
+    stroke-dashoffset: 1;
+  }
+
+  70%,
+  to {
+    stroke-dashoffset: -107;
+  }
+}
+
+@keyframes reservation-loader-sand-fill {
+  from,
+  10% {
+    animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0);
+    stroke-dashoffset: 55;
+  }
+
+  70%,
+  to {
+    stroke-dashoffset: -54;
+  }
+}
+
+@keyframes reservation-loader-sand-grain-left {
+  from,
+  10% {
+    animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0);
+    stroke-dashoffset: 29;
+  }
+
+  70%,
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+
+@keyframes reservation-loader-sand-grain-right {
+  from,
+  10% {
+    animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0);
+    stroke-dashoffset: 27;
+  }
+
+  70%,
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+@keyframes reservation-loader-sand-line-left {
+  from,
+  10% {
+    animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0);
+    stroke-dashoffset: 53;
+  }
+
+  70%,
+  to {
+    stroke-dashoffset: -55;
+  }
+}
+
+@keyframes reservation-loader-sand-line-right {
+  from,
+  10% {
+    animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0);
+    stroke-dashoffset: 14;
+  }
+
+  70%,
+  to {
+    stroke-dashoffset: -24.5;
+  }
+}
+
+@keyframes reservation-loader-sand-mound-top {
+  from,
+  10% {
+    animation-timing-function: linear;
+    transform: translate(0, 0);
+  }
+
+  15% {
+    animation-timing-function: cubic-bezier(0.12, 0, 0.39, 0);
+    transform: translate(0, 1.5px);
+  }
+
+  51%,
+  to {
+    transform: translate(0, 13px);
+  }
+}
+
+@keyframes reservation-loader-sand-mound-bottom {
+  from,
+  31% {
+    animation-timing-function: cubic-bezier(0.61, 1, 0.88, 1);
+    transform: scale(1, 0);
+  }
+
+  56%,
+  to {
+    transform: scale(1, 1);
+  }
 }
 
 .dates-modal__header {
@@ -982,6 +1370,7 @@ textarea {
     transform 160ms ease,
     border-color 160ms ease,
     background 160ms ease;
+  gap: 8px;
 }
 
 .dates-modal__close:hover {
@@ -1069,5 +1458,9 @@ textarea {
   .dates-modal {
     max-height: 84vh;
     padding: 20px;
+  }
+
+  .reservation-edit-modal__summary {
+    grid-template-columns: 1fr;
   }
 }

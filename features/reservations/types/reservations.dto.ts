@@ -26,3 +26,18 @@ export type ReservationsByDateResponseDto = {
 export type AvailableReservationDatesResponseDto = {
   dates: string[];
 };
+
+export type UpdateReservationRequestDto = {
+  phone: string;
+  currentDate: string;
+  currentTime: string;
+  date?: string;
+  time?: string;
+  name?: string;
+  quantity?: number;
+};
+
+export type UpdateReservationResponseDto = {
+  message: string;
+  reservation: ReservationApiDto;
+};
