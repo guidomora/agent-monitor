@@ -27,6 +27,12 @@ export type AvailableReservationDatesResponseDto = {
   dates: string[];
 };
 
+export type ReservationSlotsByDateResponseDto = {
+  date: string;
+  sheetDate: string;
+  slots: ReservationSlotApiDto[];
+};
+
 export type UpdateReservationRequestDto = {
   phone: string;
   currentDate: string;

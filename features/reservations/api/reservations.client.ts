@@ -1,9 +1,11 @@
 import type {
+  ReservationSlotsByDateResponseDto,
   ReservationsByDateResponseDto,
   UpdateReservationRequestDto,
   UpdateReservationResponseDto,
 } from "@/features/reservations/types/reservations.dto";
 import type {
+  ReservationSlotsByDateQuery,
   ReservationsByDateQuery,
   ReservationsClientErrorResponse,
   UpdateReservationClientErrorResponse,
@@ -26,6 +28,25 @@ export async function getReservationsByDateClient({
   }
 
   return (await response.json()) as ReservationsByDateResponseDto;
+}
+
+export async function getReservationSlotsByDateClient({
+  date,
+}: ReservationSlotsByDateQuery) {
+  const searchParams = new URLSearchParams({ date });
+  const response = await fetch(`/api/reservations/slots?${searchParams.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const errorPayload =
+      (await response.json().catch(() => null)) as ReservationsClientErrorResponse | null;
+    const message = getClientErrorMessage(errorPayload?.message);
+
+    throw new Error(message || "No se pudieron cargar los horarios disponibles.");
+  }
+
+  return (await response.json()) as ReservationSlotsByDateResponseDto;
 }
 
 export async function updateReservationClient(payload: UpdateReservationRequestDto) {

@@ -1,12 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getReservationSlotsByDateClient } from "@/features/reservations/api/reservations.client";
 import { ReservationEditLoader } from "@/features/reservations/components/reservation-edit-loader";
+import {
+  ReservationEditSelect,
+  type ReservationEditSelectOption,
+} from "@/features/reservations/components/reservation-edit-select";
 import type {
   ReservationEditFormValues,
   ReservationEditTarget,
 } from "@/features/reservations/types/reservation-edit.types";
-import type { UpdateReservationRequestDto } from "@/features/reservations/types/reservations.dto";
+import type {
+  ReservationSlotApiDto,
+  UpdateReservationRequestDto,
+} from "@/features/reservations/types/reservations.dto";
 
 type ReservationEditModalProps = {
   availableDates: string[];
@@ -31,16 +39,76 @@ export function ReservationEditModal({
     createInitialFormValues(reservationToEdit),
   );
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
+  const [slotOptions, setSlotOptions] = useState<ReservationSlotApiDto[]>([]);
+  const [slotsErrorMessage, setSlotsErrorMessage] = useState<string | null>(null);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(true);
 
   useEffect(() => {
     setFormValues(createInitialFormValues(reservationToEdit));
     setValidationMessage(null);
   }, [reservationToEdit]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadSlots() {
+      setIsLoadingSlots(true);
+      setSlotsErrorMessage(null);
+
+      try {
+        const response = await getReservationSlotsByDateClient({ date: formValues.date });
+
+        if (!isMounted) {
+          return;
+        }
+
+        const nextSlotOptions = getSelectableSlots(
+          response.slots,
+          reservationToEdit,
+          formValues.date,
+        );
+
+        setSlotOptions(nextSlotOptions);
+        setFormValues((currentValues) => {
+          const nextTime =
+            nextSlotOptions.find((slot) => slot.time === currentValues.time)?.time ??
+            nextSlotOptions[0]?.time ??
+            currentValues.time;
+
+          return {
+            ...currentValues,
+            time: nextTime,
+          };
+        });
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setSlotOptions([]);
+        setSlotsErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar los horarios disponibles.",
+        );
+      } finally {
+        if (isMounted) {
+          setIsLoadingSlots(false);
+        }
+      }
+    }
+
+    void loadSlots();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [formValues.date, reservationToEdit]);
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const payload = createUpdatePayload(reservationToEdit, formValues);
+    const payload = createUpdatePayload(reservationToEdit, formValues, slotOptions, isLoadingSlots);
 
     if ("error" in payload) {
       setValidationMessage(payload.error);
@@ -52,8 +120,13 @@ export function ReservationEditModal({
   }
 
   const availableDateCount = availableDates.length;
-  const combinedErrorMessage = validationMessage ?? submitErrorMessage;
+  const combinedErrorMessage = validationMessage ?? slotsErrorMessage ?? submitErrorMessage;
   const canClose = !isSubmitting;
+  const isSubmitDisabled = isSubmitting || isLoadingSlots || slotOptions.length === 0;
+  const timeSelectOptions = slotOptions.map((slot) => ({
+    value: slot.time,
+    description: getSlotDescription(slot, reservationToEdit, formValues.date),
+  }));
 
   return (
     <div
@@ -109,6 +182,7 @@ export function ReservationEditModal({
               <span>Fecha</span>
               {availableDateCount > 0 ? (
                 <select
+                  className="reservation-edit-modal__select"
                   value={formValues.date}
                   onChange={(event) =>
                     setFormValues((currentValues) => ({
@@ -137,14 +211,18 @@ export function ReservationEditModal({
 
             <label>
               <span>Hora</span>
-              <input
-                type="time"
+              <ReservationEditSelect
+                emptyLabel={
+                  isLoadingSlots ? "Cargando horarios..." : "Sin horarios disponibles"
+                }
                 value={formValues.time}
-                onChange={(event) =>
+                onChange={(nextTime) =>
                   setFormValues((currentValues) => ({
                     ...currentValues,
-                    time: event.target.value,
+                    time: nextTime,
                   }))}
+                options={timeSelectOptions}
+                disabled={isLoadingSlots || slotOptions.length === 0}
               />
             </label>
           </div>
@@ -201,9 +279,13 @@ export function ReservationEditModal({
               <button
                 type="submit"
                 className="action-button action-button--primary reservation-edit-modal__submit"
-                disabled={isSubmitting}
+                disabled={isSubmitDisabled}
               >
-                {isSubmitting ? "Guardando cambios" : "Guardar cambios"}
+                {isSubmitting
+                  ? "Guardando cambios"
+                  : isLoadingSlots
+                    ? "Cargando horarios"
+                    : "Guardar cambios"}
               </button>
             </div>
           </div>
@@ -227,6 +309,8 @@ function createInitialFormValues(
 function createUpdatePayload(
   reservationToEdit: ReservationEditTarget,
   formValues: ReservationEditFormValues,
+  slotOptions: ReservationSlotApiDto[],
+  isLoadingSlots: boolean,
 ):
   | UpdateReservationRequestDto
   | {
@@ -236,12 +320,24 @@ function createUpdatePayload(
   const trimmedTime = formValues.time.trim();
   const trimmedQuantity = formValues.quantity.trim();
 
+  if (isLoadingSlots) {
+    return { error: "Espera a que se carguen los horarios de la fecha seleccionada." };
+  }
+
   if (trimmedName.length === 0) {
     return { error: "El nombre no puede estar vacio." };
   }
 
+  if (slotOptions.length === 0) {
+    return { error: "La fecha seleccionada no tiene horarios disponibles para elegir." };
+  }
+
   if (!timePattern.test(trimmedTime)) {
     return { error: "La hora debe tener formato HH:mm." };
+  }
+
+  if (!slotOptions.some((slot) => slot.time === trimmedTime)) {
+    return { error: "Selecciona uno de los horarios disponibles para la fecha elegida." };
   }
 
   const parsedQuantity = Number.parseInt(trimmedQuantity, 10);
@@ -286,4 +382,63 @@ function createUpdatePayload(
   }
 
   return payload;
+}
+
+function getSelectableSlots(
+  slots: ReservationSlotApiDto[],
+  reservationToEdit: ReservationEditTarget,
+  selectedDate: string,
+) {
+  const selectableSlots = slots.filter((slot) => slot.available > 0);
+  const shouldKeepCurrentTime =
+    selectedDate === reservationToEdit.currentDate &&
+    !selectableSlots.some((slot) => slot.time === reservationToEdit.reservation.time);
+
+  if (shouldKeepCurrentTime) {
+    const currentSlot = slots.find((slot) => slot.time === reservationToEdit.reservation.time);
+
+    if (currentSlot) {
+      return [currentSlot, ...selectableSlots].sort((left, right) =>
+        left.time.localeCompare(right.time),
+      );
+    }
+
+    return [
+      {
+        time: reservationToEdit.reservation.time,
+        reserved: reservationToEdit.reservation.partySize,
+        available: 0,
+      },
+      ...selectableSlots,
+    ].sort((left, right) => left.time.localeCompare(right.time));
+  }
+
+  return selectableSlots.sort((left, right) => left.time.localeCompare(right.time));
+}
+
+function formatSlotLabel(
+  slot: ReservationSlotApiDto,
+  reservationToEdit: ReservationEditTarget,
+  selectedDate: string,
+) {
+  return `${slot.time} — ${getSlotDescription(slot, reservationToEdit, selectedDate)}`;
+}
+
+function getSlotDescription(
+  slot: ReservationSlotApiDto,
+  reservationToEdit: ReservationEditTarget,
+  selectedDate: string,
+) {
+  const isCurrentReservationTime =
+    selectedDate === reservationToEdit.currentDate &&
+    slot.time === reservationToEdit.reservation.time;
+
+  if (isCurrentReservationTime && slot.available <= 0) {
+    return "horario actual";
+  }
+
+  const availabilityLabel =
+    slot.available === 1 ? "1 lugar disponible" : `${slot.available} lugares disponibles`;
+
+  return availabilityLabel;
 }
