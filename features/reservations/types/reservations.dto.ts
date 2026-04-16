@@ -43,7 +43,18 @@ export type UpdateReservationRequestDto = {
   quantity?: number;
 };
 
+export type DeleteReservationRequestDto = {
+  phone: string;
+  currentDate: string;
+  currentTime: string;
+};
+
 export type UpdateReservationResponseDto = {
+  message: string;
+  reservation: ReservationApiDto;
+};
+
+export type DeleteReservationResponseDto = {
   message: string;
   reservation: ReservationApiDto;
 };

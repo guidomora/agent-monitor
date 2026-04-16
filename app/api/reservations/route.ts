@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  deleteReservation,
   getReservationsByDate,
   ReservationServiceError,
   updateReservation,
 } from "@/features/reservations/api/reservations.service";
-import type { UpdateReservationRequestDto } from "@/features/reservations/types/reservations.dto";
+import type {
+  DeleteReservationRequestDto,
+  UpdateReservationRequestDto,
+} from "@/features/reservations/types/reservations.dto";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +54,31 @@ export async function PATCH(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "No se pudo actualizar la reserva.";
+    const status = error instanceof ReservationServiceError ? error.status : 500;
+
+    return NextResponse.json({ message }, { status });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  let payload: DeleteReservationRequestDto;
+
+  try {
+    payload = (await request.json()) as DeleteReservationRequestDto;
+  } catch {
+    return NextResponse.json(
+      { message: "No se pudo leer el body de eliminacion." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const response = await deleteReservation(payload);
+
+    return NextResponse.json(response);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "No se pudo eliminar la reserva.";
     const status = error instanceof ReservationServiceError ? error.status : 500;
 
     return NextResponse.json({ message }, { status });

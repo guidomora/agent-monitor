@@ -13,3 +13,7 @@ export type ReservationsClientErrorResponse = {
 export type UpdateReservationClientErrorResponse = {
   message?: string | string[];
 };
+
+export type DeleteReservationClientErrorResponse = {
+  message?: string | string[];
+};

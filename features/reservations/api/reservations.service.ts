@@ -2,6 +2,8 @@ import { AxiosError } from "axios";
 import { backendApi } from "@/infrastructure/http/backend-api";
 import type {
   AvailableReservationDatesResponseDto,
+  DeleteReservationRequestDto,
+  DeleteReservationResponseDto,
   ReservationSlotsByDateResponseDto,
   ReservationsByDateResponseDto,
   UpdateReservationRequestDto,
@@ -75,6 +77,22 @@ export async function updateReservation(payload: UpdateReservationRequestDto) {
     return response.data;
   } catch (error) {
     throw createReservationServiceError(error, "No se pudo actualizar la reserva.");
+  }
+}
+
+export async function deleteReservation(payload: DeleteReservationRequestDto) {
+  try {
+    const response = await backendApi.delete<DeleteReservationResponseDto>(
+      "bot/reservations",
+      {
+        data: payload,
+        timeout: 30000,
+      },
+    );
+
+    return response.data;
+  } catch (error) {
+    throw createReservationServiceError(error, "No se pudo eliminar la reserva.");
   }
 }
 

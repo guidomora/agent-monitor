@@ -1,10 +1,13 @@
 import type {
+  DeleteReservationRequestDto,
+  DeleteReservationResponseDto,
   ReservationSlotsByDateResponseDto,
   ReservationsByDateResponseDto,
   UpdateReservationRequestDto,
   UpdateReservationResponseDto,
 } from "@/features/reservations/types/reservations.dto";
 import type {
+  DeleteReservationClientErrorResponse,
   ReservationSlotsByDateQuery,
   ReservationsByDateQuery,
   ReservationsClientErrorResponse,
@@ -67,6 +70,26 @@ export async function updateReservationClient(payload: UpdateReservationRequestD
   }
 
   return (await response.json()) as UpdateReservationResponseDto;
+}
+
+export async function deleteReservationClient(payload: DeleteReservationRequestDto) {
+  const response = await fetch("/api/reservations", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorPayload =
+      (await response.json().catch(() => null)) as DeleteReservationClientErrorResponse | null;
+    const message = getClientErrorMessage(errorPayload?.message);
+
+    throw new Error(message || "No se pudo eliminar la reserva.");
+  }
+
+  return (await response.json()) as DeleteReservationResponseDto;
 }
 
 function getClientErrorMessage(message?: string | string[]): string | undefined {

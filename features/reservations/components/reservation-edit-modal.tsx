@@ -181,21 +181,18 @@ export function ReservationEditModal({
             <label>
               <span>Fecha</span>
               {availableDateCount > 0 ? (
-                <select
-                  className="reservation-edit-modal__select"
+                <ReservationEditSelect
+                  emptyLabel="Sin fechas disponibles"
                   value={formValues.date}
-                  onChange={(event) =>
+                  onChange={(nextDate) =>
                     setFormValues((currentValues) => ({
                       ...currentValues,
-                      date: event.target.value,
+                      date: nextDate,
                     }))}
-                >
-                  {availableDates.map((date) => (
-                    <option key={date} value={date}>
-                      {date}
-                    </option>
-                  ))}
-                </select>
+                  options={availableDates.map((date) => ({
+                    value: date,
+                  }))}
+                />
               ) : (
                 <input
                   type="date"

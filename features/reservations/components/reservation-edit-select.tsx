@@ -83,14 +83,7 @@ export function ReservationEditSelect({
       >
         <span className="reservation-edit-select__value">
           {selectedOption ? (
-            <>
-              <span className="reservation-edit-select__time">{selectedOption.value}</span>
-              {selectedOption.description ? (
-                <span className="reservation-edit-select__description">
-                  {selectedOption.description}
-                </span>
-              ) : null}
-            </>
+            <span className="reservation-edit-select__time">{selectedOption.value}</span>
           ) : (
             <span className="reservation-edit-select__placeholder">{emptyLabel}</span>
           )}

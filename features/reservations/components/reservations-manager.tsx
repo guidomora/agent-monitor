@@ -3,16 +3,22 @@
 import { useEffect, useState } from "react";
 import { getAvailableReservationDatesClient } from "@/features/reservations/api/available-dates.client";
 import {
+  deleteReservationClient,
   getReservationsByDateClient,
   updateReservationClient,
 } from "@/features/reservations/api/reservations.client";
+import { ReservationDeleteModal } from "@/features/reservations/components/reservation-delete-modal";
 import { ChevronLeftIcon } from "@/features/reservations/components/chevron-left-icon";
 import { ChevronRightIcon } from "@/features/reservations/components/chevron-right-icon";
 import { ReservationEditModal } from "@/features/reservations/components/reservation-edit-modal";
+import type { ReservationDeleteTarget } from "@/features/reservations/types/reservation-delete.types";
 import { mapReservationManagement } from "@/features/reservations/mappers/reservations.mapper";
 import type { ReservationEditTarget } from "@/features/reservations/types/reservation-edit.types";
 import type { ReservationManagementViewModel } from "@/features/reservations/types/reservation.view-model";
-import type { UpdateReservationRequestDto } from "@/features/reservations/types/reservations.dto";
+import type {
+  DeleteReservationRequestDto,
+  UpdateReservationRequestDto,
+} from "@/features/reservations/types/reservations.dto";
 
 const shortDateFormatter = new Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
@@ -43,6 +49,10 @@ export function ReservationsManager() {
   const [reservationToEdit, setReservationToEdit] = useState<ReservationEditTarget | null>(null);
   const [editErrorMessage, setEditErrorMessage] = useState<string | null>(null);
   const [isSavingReservation, setIsSavingReservation] = useState(false);
+  const [reservationToDelete, setReservationToDelete] =
+    useState<ReservationDeleteTarget | null>(null);
+  const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(null);
+  const [isDeletingReservation, setIsDeletingReservation] = useState(false);
 
   async function loadReservations(date: string) {
     setIsLoadingReservations(true);
@@ -141,7 +151,9 @@ export function ReservationsManager() {
   }, [selectedDate]);
 
   useEffect(() => {
-    const isAnyModalOpen = isDatesModalOpen || reservationToEdit !== null;
+    const isAnyModalOpen =
+      isDatesModalOpen || reservationToEdit !== null || reservationToDelete !== null;
+    const isAnyMutationBusy = isSavingReservation || isDeletingReservation;
 
     if (!isAnyModalOpen) {
       return undefined;
@@ -153,9 +165,16 @@ export function ReservationsManager() {
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        setIsDatesModalOpen(false);
+        if (!isAnyMutationBusy) {
+          setIsDatesModalOpen(false);
+        }
+
         if (!isSavingReservation) {
           closeEditModal();
+        }
+
+        if (!isDeletingReservation) {
+          closeDeleteModal();
         }
       }
     }
@@ -166,7 +185,13 @@ export function ReservationsManager() {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isDatesModalOpen, reservationToEdit, isSavingReservation]);
+  }, [
+    isDatesModalOpen,
+    reservationToDelete,
+    reservationToEdit,
+    isDeletingReservation,
+    isSavingReservation,
+  ]);
 
   const selectedDateIndex = availableDates.findIndex((date) => date === selectedDate);
   const previousDate = availableDates[selectedDateIndex - 1] ?? null;
@@ -178,6 +203,12 @@ export function ReservationsManager() {
     setReservationToEdit(null);
     setEditErrorMessage(null);
     setIsSavingReservation(false);
+  }
+
+  function closeDeleteModal() {
+    setReservationToDelete(null);
+    setDeleteErrorMessage(null);
+    setIsDeletingReservation(false);
   }
 
   async function handleReservationUpdate(payload: UpdateReservationRequestDto) {
@@ -202,6 +233,24 @@ export function ReservationsManager() {
         error instanceof Error ? error.message : "No se pudo actualizar la reserva.",
       );
       setIsSavingReservation(false);
+    }
+  }
+
+  async function handleReservationDelete(payload: DeleteReservationRequestDto) {
+    setIsDeletingReservation(true);
+    setDeleteErrorMessage(null);
+
+    try {
+      const response = await deleteReservationClient(payload);
+
+      closeDeleteModal();
+      setPendingAction(response.message);
+      await loadReservations(payload.currentDate);
+    } catch (error) {
+      setDeleteErrorMessage(
+        error instanceof Error ? error.message : "No se pudo eliminar la reserva.",
+      );
+      setIsDeletingReservation(false);
     }
   }
 
@@ -428,9 +477,12 @@ export function ReservationsManager() {
                               type="button"
                               className="action-button action-button--subtle-danger"
                               onClick={() => {
-                                setPendingAction(
-                                  `Borrar reservado para ${reservation.guest} (${reservation.phone}).`,
-                                );
+                                setPendingAction(null);
+                                setDeleteErrorMessage(null);
+                                setReservationToDelete({
+                                  currentDate: reservationsViewModel.date,
+                                  reservation,
+                                });
                               }}
                             >
                               Borrar
@@ -519,6 +571,16 @@ export function ReservationsManager() {
           submitErrorMessage={editErrorMessage}
           onClose={closeEditModal}
           onSubmit={handleReservationUpdate}
+        />
+      ) : null}
+
+      {reservationToDelete ? (
+        <ReservationDeleteModal
+          deleteErrorMessage={deleteErrorMessage}
+          isSubmitting={isDeletingReservation}
+          reservationToDelete={reservationToDelete}
+          onClose={closeDeleteModal}
+          onSubmit={handleReservationDelete}
         />
       ) : null}
     </section>
