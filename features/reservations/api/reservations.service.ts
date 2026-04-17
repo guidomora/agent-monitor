@@ -2,6 +2,8 @@ import { AxiosError } from "axios";
 import { backendApi } from "@/infrastructure/http/backend-api";
 import type {
   AvailableReservationDatesResponseDto,
+  CreateReservationRequestDto,
+  CreateReservationResponseDto,
   DeleteReservationRequestDto,
   DeleteReservationResponseDto,
   ReservationSlotsByDateResponseDto,
@@ -61,6 +63,22 @@ export async function getReservationSlotsByDate(date: string) {
       error,
       "No se pudieron obtener los horarios disponibles.",
     );
+  }
+}
+
+export async function createReservation(payload: CreateReservationRequestDto) {
+  try {
+    const response = await backendApi.post<CreateReservationResponseDto>(
+      "bot/reservations",
+      payload,
+      {
+        timeout: 30000,
+      },
+    );
+
+    return response.data;
+  } catch (error) {
+    throw createReservationServiceError(error, "No se pudo crear la reserva.");
   }
 }
 

@@ -10,6 +10,10 @@ export type ReservationsClientErrorResponse = {
   message?: string | string[];
 };
 
+export type CreateReservationClientErrorResponse = {
+  message?: string | string[];
+};
+
 export type UpdateReservationClientErrorResponse = {
   message?: string | string[];
 };

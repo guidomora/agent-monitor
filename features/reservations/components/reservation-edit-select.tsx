@@ -31,12 +31,6 @@ export function ReservationEditSelect({
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (disabled) {
-      setIsOpen(false);
-    }
-  }, [disabled]);
-
-  useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
       if (!containerRef.current?.contains(event.target as Node)) {
         setIsOpen(false);
@@ -71,7 +65,7 @@ export function ReservationEditSelect({
         id={selectId}
         type="button"
         className="reservation-edit-select__trigger"
-        aria-expanded={isOpen}
+        aria-expanded={!disabled && isOpen}
         aria-haspopup="listbox"
         aria-controls={`${selectId}-listbox`}
         disabled={disabled}
@@ -93,7 +87,7 @@ export function ReservationEditSelect({
         </span>
       </button>
 
-      {isOpen ? (
+      {!disabled && isOpen ? (
         <div
           id={`${selectId}-listbox`}
           className="reservation-edit-select__menu scrollbar-thin"

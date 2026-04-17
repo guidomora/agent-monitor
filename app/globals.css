@@ -976,8 +976,15 @@ textarea {
 }
 
 .reservation-edit-modal {
+  position: relative;
   width: min(720px, 100%);
+  max-height: min(92vh, 920px);
   overflow: visible;
+}
+
+.reservation-edit-modal--busy > *:not(.reservation-edit-modal__loading) {
+  opacity: 0.28;
+  pointer-events: none;
 }
 
 .reservation-delete-modal {
@@ -1254,18 +1261,31 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  min-height: 160px;
-  padding: 20px 18px;
-  border: 1px solid rgba(125, 66, 255, 0.16);
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  padding: 24px;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid rgba(125, 66, 255, 0.08);
   border-radius: 20px;
   background:
-    radial-gradient(circle at top, rgba(200, 255, 47, 0.18), transparent 42%),
-    rgba(125, 66, 255, 0.08);
+    radial-gradient(circle at center, rgba(200, 255, 47, 0.18), transparent 30%),
+    rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
   color: #56339c;
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 0.95rem;
   letter-spacing: 0.01em;
   text-align: center;
+}
+
+.reservation-edit-modal__loading span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .reservation-loader {
@@ -1274,6 +1294,8 @@ textarea {
   display: block;
   width: 8rem;
   height: auto;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .reservation-loader__glare-top,

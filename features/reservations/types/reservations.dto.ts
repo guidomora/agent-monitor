@@ -33,6 +33,14 @@ export type ReservationSlotsByDateResponseDto = {
   slots: ReservationSlotApiDto[];
 };
 
+export type CreateReservationRequestDto = {
+  date: string;
+  time: string;
+  name: string;
+  phone: string;
+  quantity: number;
+};
+
 export type UpdateReservationRequestDto = {
   phone: string;
   currentDate: string;
@@ -50,6 +58,11 @@ export type DeleteReservationRequestDto = {
 };
 
 export type UpdateReservationResponseDto = {
+  message: string;
+  reservation: ReservationApiDto;
+};
+
+export type CreateReservationResponseDto = {
   message: string;
   reservation: ReservationApiDto;
 };

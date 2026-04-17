@@ -1,4 +1,6 @@
 import type {
+  CreateReservationRequestDto,
+  CreateReservationResponseDto,
   DeleteReservationRequestDto,
   DeleteReservationResponseDto,
   ReservationSlotsByDateResponseDto,
@@ -7,6 +9,7 @@ import type {
   UpdateReservationResponseDto,
 } from "@/features/reservations/types/reservations.dto";
 import type {
+  CreateReservationClientErrorResponse,
   DeleteReservationClientErrorResponse,
   ReservationSlotsByDateQuery,
   ReservationsByDateQuery,
@@ -50,6 +53,26 @@ export async function getReservationSlotsByDateClient({
   }
 
   return (await response.json()) as ReservationSlotsByDateResponseDto;
+}
+
+export async function createReservationClient(payload: CreateReservationRequestDto) {
+  const response = await fetch("/api/reservations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorPayload =
+      (await response.json().catch(() => null)) as CreateReservationClientErrorResponse | null;
+    const message = getClientErrorMessage(errorPayload?.message);
+
+    throw new Error(message || "No se pudo crear la reserva.");
+  }
+
+  return (await response.json()) as CreateReservationResponseDto;
 }
 
 export async function updateReservationClient(payload: UpdateReservationRequestDto) {

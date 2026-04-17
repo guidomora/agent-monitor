@@ -42,7 +42,9 @@ export function ReservationDeleteModal({
       }}
     >
       <div
-        className="dates-modal reservation-delete-modal"
+        className={`dates-modal reservation-edit-modal reservation-delete-modal${
+          isSubmitting ? " reservation-edit-modal--busy" : ""
+        }`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reservation-delete-modal-title"
@@ -96,13 +98,6 @@ export function ReservationDeleteModal({
             </div>
           ) : null}
 
-          {isSubmitting ? (
-            <div className="reservation-edit-modal__loading" role="status" aria-live="assertive">
-              <ReservationEditLoader />
-              <span>Eliminando reserva...</span>
-            </div>
-          ) : null}
-
           <div className="crud-form__footer reservation-delete-modal__footer">
             <div className="crud-form__actions">
               <button
@@ -123,6 +118,13 @@ export function ReservationDeleteModal({
             </div>
           </div>
         </form>
+
+        {isSubmitting ? (
+          <div className="reservation-edit-modal__loading" role="status" aria-live="assertive">
+            <ReservationEditLoader />
+            <span>Eliminando reserva...</span>
+          </div>
+        ) : null}
       </div>
     </div>
   );

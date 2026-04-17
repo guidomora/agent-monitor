@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { getAvailableReservationDatesClient } from "@/features/reservations/api/available-dates.client";
 import {
+  createReservationClient,
   deleteReservationClient,
   getReservationsByDateClient,
   updateReservationClient,
 } from "@/features/reservations/api/reservations.client";
+import { ReservationCreateModal } from "@/features/reservations/components/reservation-create-modal";
 import { ReservationDeleteModal } from "@/features/reservations/components/reservation-delete-modal";
 import { ChevronLeftIcon } from "@/features/reservations/components/chevron-left-icon";
 import { ChevronRightIcon } from "@/features/reservations/components/chevron-right-icon";
@@ -16,6 +18,7 @@ import { mapReservationManagement } from "@/features/reservations/mappers/reserv
 import type { ReservationEditTarget } from "@/features/reservations/types/reservation-edit.types";
 import type { ReservationManagementViewModel } from "@/features/reservations/types/reservation.view-model";
 import type {
+  CreateReservationRequestDto,
   DeleteReservationRequestDto,
   UpdateReservationRequestDto,
 } from "@/features/reservations/types/reservations.dto";
@@ -33,7 +36,7 @@ const fullDateFormatter = new Intl.DateTimeFormat("es-AR", {
 });
 
 export function ReservationsManager() {
-  const todayDate = getTodayDate();
+  const [todayDate] = useState(() => getTodayDate());
   const [availableDates, setAvailableDates] = useState<string[]>([]);
   const [isLoadingDates, setIsLoadingDates] = useState(true);
   const [datesErrorMessage, setDatesErrorMessage] = useState<string | null>(null);
@@ -46,6 +49,9 @@ export function ReservationsManager() {
   );
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isDatesModalOpen, setIsDatesModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createErrorMessage, setCreateErrorMessage] = useState<string | null>(null);
+  const [isCreatingReservation, setIsCreatingReservation] = useState(false);
   const [reservationToEdit, setReservationToEdit] = useState<ReservationEditTarget | null>(null);
   const [editErrorMessage, setEditErrorMessage] = useState<string | null>(null);
   const [isSavingReservation, setIsSavingReservation] = useState(false);
@@ -112,7 +118,7 @@ export function ReservationsManager() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [todayDate]);
 
   useEffect(() => {
     let isMounted = true;
@@ -152,8 +158,12 @@ export function ReservationsManager() {
 
   useEffect(() => {
     const isAnyModalOpen =
-      isDatesModalOpen || reservationToEdit !== null || reservationToDelete !== null;
-    const isAnyMutationBusy = isSavingReservation || isDeletingReservation;
+      isDatesModalOpen ||
+      isCreateModalOpen ||
+      reservationToEdit !== null ||
+      reservationToDelete !== null;
+    const isAnyMutationBusy =
+      isCreatingReservation || isSavingReservation || isDeletingReservation;
 
     if (!isAnyModalOpen) {
       return undefined;
@@ -167,6 +177,10 @@ export function ReservationsManager() {
       if (event.key === "Escape") {
         if (!isAnyMutationBusy) {
           setIsDatesModalOpen(false);
+        }
+
+        if (!isCreatingReservation) {
+          closeCreateModal();
         }
 
         if (!isSavingReservation) {
@@ -187,8 +201,10 @@ export function ReservationsManager() {
     };
   }, [
     isDatesModalOpen,
+    isCreateModalOpen,
     reservationToDelete,
     reservationToEdit,
+    isCreatingReservation,
     isDeletingReservation,
     isSavingReservation,
   ]);
@@ -205,10 +221,40 @@ export function ReservationsManager() {
     setIsSavingReservation(false);
   }
 
+  function closeCreateModal() {
+    setIsCreateModalOpen(false);
+    setCreateErrorMessage(null);
+    setIsCreatingReservation(false);
+  }
+
   function closeDeleteModal() {
     setReservationToDelete(null);
     setDeleteErrorMessage(null);
     setIsDeletingReservation(false);
+  }
+
+  async function handleReservationCreate(payload: CreateReservationRequestDto) {
+    setIsCreatingReservation(true);
+    setCreateErrorMessage(null);
+
+    try {
+      const response = await createReservationClient(payload);
+
+      closeCreateModal();
+      setPendingAction(response.message);
+
+      if (payload.date !== selectedDate) {
+        setSelectedDate(payload.date);
+        return;
+      }
+
+      await loadReservations(payload.date);
+    } catch (error) {
+      setCreateErrorMessage(
+        error instanceof Error ? error.message : "No se pudo crear la reserva.",
+      );
+      setIsCreatingReservation(false);
+    }
   }
 
   async function handleReservationUpdate(payload: UpdateReservationRequestDto) {
@@ -309,6 +355,17 @@ export function ReservationsManager() {
                   formatLongDate(selectedDate)}
               </h3>
             </div>
+            <button
+              type="button"
+              className="action-button action-button--primary"
+              onClick={() => {
+                setPendingAction(null);
+                setCreateErrorMessage(null);
+                setIsCreateModalOpen(true);
+              }}
+            >
+              Crear reserva
+            </button>
           </div>
 
           {datesErrorMessage ? (
@@ -571,6 +628,17 @@ export function ReservationsManager() {
           submitErrorMessage={editErrorMessage}
           onClose={closeEditModal}
           onSubmit={handleReservationUpdate}
+        />
+      ) : null}
+
+      {isCreateModalOpen ? (
+        <ReservationCreateModal
+          availableDates={availableDates}
+          initialDate={selectedDate}
+          isSubmitting={isCreatingReservation}
+          submitErrorMessage={createErrorMessage}
+          onClose={closeCreateModal}
+          onSubmit={handleReservationCreate}
         />
       ) : null}
 

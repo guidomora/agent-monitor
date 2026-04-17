@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  createReservation,
   deleteReservation,
   getReservationsByDate,
   ReservationServiceError,
   updateReservation,
 } from "@/features/reservations/api/reservations.service";
 import type {
+  CreateReservationRequestDto,
   DeleteReservationRequestDto,
   UpdateReservationRequestDto,
 } from "@/features/reservations/types/reservations.dto";
@@ -29,6 +31,31 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "No se pudieron obtener las reservas.";
+    const status = error instanceof ReservationServiceError ? error.status : 500;
+
+    return NextResponse.json({ message }, { status });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  let payload: CreateReservationRequestDto;
+
+  try {
+    payload = (await request.json()) as CreateReservationRequestDto;
+  } catch {
+    return NextResponse.json(
+      { message: "No se pudo leer el body de creacion." },
+      { status: 400 },
+    );
+  }
+
+  try {
+    const response = await createReservation(payload);
+
+    return NextResponse.json(response);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "No se pudo crear la reserva.";
     const status = error instanceof ReservationServiceError ? error.status : 500;
 
     return NextResponse.json({ message }, { status });
