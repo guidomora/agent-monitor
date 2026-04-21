@@ -779,6 +779,77 @@ textarea {
   letter-spacing: 0.16em;
 }
 
+.schedule-day-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(25, 31, 45, 0.06);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(244, 246, 255, 0.88), rgba(255, 255, 255, 0.92)),
+    rgba(255, 255, 255, 0.9);
+}
+
+.schedule-day-status__summary,
+.schedule-day-status__actions {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-day-status__label,
+.reservation-day-status-modal__stats span,
+.day-status-badge {
+  color: var(--muted);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.schedule-day-status__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.schedule-day-status__meta strong {
+  font-size: 1.15rem;
+  letter-spacing: -0.04em;
+}
+
+.schedule-day-status__summary p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.day-status-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.day-status-badge.is-open {
+  border-color: rgba(74, 133, 20, 0.22);
+  background: rgba(151, 214, 52, 0.18);
+  color: #274d00;
+}
+
+.day-status-badge.is-closed {
+  border-color: rgba(217, 77, 97, 0.2);
+  background: rgba(217, 77, 97, 0.12);
+  color: #a02c40;
+}
+
 .schedule-date-field input {
   width: 100%;
   padding: 14px 16px;
@@ -802,6 +873,10 @@ textarea {
 }
 
 .available-date-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
   padding: 12px 14px;
   border: 1px solid rgba(25, 31, 45, 0.08);
@@ -825,6 +900,11 @@ textarea {
   border-color: rgba(125, 66, 255, 0.22);
   background: rgba(125, 66, 255, 0.08);
   color: #56339c;
+}
+
+.available-date-chip.is-closed {
+  border-style: dashed;
+  background: rgba(255, 244, 245, 0.96);
 }
 
 .management-overview {
@@ -1070,6 +1150,30 @@ textarea {
   letter-spacing: -0.03em;
 }
 
+.reservation-day-status-modal__summary {
+  gap: 18px;
+}
+
+.reservation-day-status-modal__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.reservation-day-status-modal__stats > div {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(25, 31, 45, 0.06);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.reservation-day-status-modal__stats strong {
+  font-size: 1.05rem;
+  letter-spacing: -0.04em;
+}
+
 .reservation-edit-select {
   position: relative;
   width: 100%;
@@ -1225,6 +1329,15 @@ textarea {
   transform: translateY(-1px);
   border-color: rgba(125, 66, 255, 0.16);
   background: rgba(125, 66, 255, 0.08);
+}
+
+.reservation-edit-select__option.is-disabled,
+.reservation-edit-select__option:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+  transform: none;
+  border-color: transparent;
+  background: rgba(247, 248, 252, 0.72);
 }
 
 .reservation-edit-select__option.is-selected {
@@ -1683,7 +1796,9 @@ textarea {
   .schedule-toolbar,
   .management-overview,
   .reservation-card__actions,
-  .reservation-card {
+  .reservation-card,
+  .schedule-day-status,
+  .reservation-day-status-modal__stats {
     grid-template-columns: 1fr;
   }
 

@@ -3,21 +3,26 @@
 import { useEffect, useState } from "react";
 import { getAvailableReservationDatesClient } from "@/features/reservations/api/available-dates.client";
 import {
+  closeReservationDayClient,
   createReservationClient,
   deleteReservationClient,
   getReservationsByDateClient,
+  reopenReservationDayClient,
   updateReservationClient,
 } from "@/features/reservations/api/reservations.client";
-import { ReservationCreateModal } from "@/features/reservations/components/reservation-create-modal";
-import { ReservationDeleteModal } from "@/features/reservations/components/reservation-delete-modal";
 import { ChevronLeftIcon } from "@/features/reservations/components/chevron-left-icon";
 import { ChevronRightIcon } from "@/features/reservations/components/chevron-right-icon";
+import { ReservationCreateModal } from "@/features/reservations/components/reservation-create-modal";
+import { ReservationDayStatusModal } from "@/features/reservations/components/reservation-day-status-modal";
+import { ReservationDeleteModal } from "@/features/reservations/components/reservation-delete-modal";
 import { ReservationEditModal } from "@/features/reservations/components/reservation-edit-modal";
-import type { ReservationDeleteTarget } from "@/features/reservations/types/reservation-delete.types";
 import { mapReservationManagement } from "@/features/reservations/mappers/reservations.mapper";
+import type { ReservationClosedDayTarget } from "@/features/reservations/types/closed-day.types";
+import type { ReservationDeleteTarget } from "@/features/reservations/types/reservation-delete.types";
 import type { ReservationEditTarget } from "@/features/reservations/types/reservation-edit.types";
 import type { ReservationManagementViewModel } from "@/features/reservations/types/reservation.view-model";
 import type {
+  AvailableReservationDateDto,
   CreateReservationRequestDto,
   DeleteReservationRequestDto,
   UpdateReservationRequestDto,
@@ -37,7 +42,7 @@ const fullDateFormatter = new Intl.DateTimeFormat("es-AR", {
 
 export function ReservationsManager() {
   const [todayDate] = useState(() => getTodayDate());
-  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [availableDates, setAvailableDates] = useState<AvailableReservationDateDto[]>([]);
   const [isLoadingDates, setIsLoadingDates] = useState(true);
   const [datesErrorMessage, setDatesErrorMessage] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(todayDate);
@@ -59,6 +64,27 @@ export function ReservationsManager() {
     useState<ReservationDeleteTarget | null>(null);
   const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(null);
   const [isDeletingReservation, setIsDeletingReservation] = useState(false);
+  const [dayToClose, setDayToClose] = useState<ReservationClosedDayTarget | null>(null);
+  const [closeDayErrorMessage, setCloseDayErrorMessage] = useState<string | null>(null);
+  const [isUpdatingDayStatus, setIsUpdatingDayStatus] = useState(false);
+
+  const availableDateValues = availableDates.map((date) => date.date);
+  const openAvailableDates = availableDates.filter((date) => !date.isClosed);
+  const openAvailableDateValues = openAvailableDates.map((date) => date.date);
+  const selectedDayStatus =
+    availableDates.find((availableDate) => availableDate.date === selectedDate) ?? null;
+  const isSelectedDateClosed = selectedDayStatus?.isClosed ?? false;
+
+  async function refreshAvailableDates() {
+    const response = await getAvailableReservationDatesClient();
+    const nextDates = response.dates;
+
+    setAvailableDates(nextDates);
+    setSelectedDate((currentDate) => getNextSelectedDate(currentDate, nextDates, todayDate));
+    setDatesErrorMessage(null);
+
+    return nextDates;
+  }
 
   async function loadReservations(date: string) {
     setIsLoadingReservations(true);
@@ -92,7 +118,7 @@ export function ReservationsManager() {
         const nextDates = response.dates;
 
         setAvailableDates(nextDates);
-        setSelectedDate((currentDate) => getNextSelectedDate(currentDate, nextDates));
+        setSelectedDate((currentDate) => getNextSelectedDate(currentDate, nextDates, todayDate));
         setDatesErrorMessage(null);
       } catch (error) {
         if (!isMounted) {
@@ -161,9 +187,13 @@ export function ReservationsManager() {
       isDatesModalOpen ||
       isCreateModalOpen ||
       reservationToEdit !== null ||
-      reservationToDelete !== null;
+      reservationToDelete !== null ||
+      dayToClose !== null;
     const isAnyMutationBusy =
-      isCreatingReservation || isSavingReservation || isDeletingReservation;
+      isCreatingReservation ||
+      isSavingReservation ||
+      isDeletingReservation ||
+      isUpdatingDayStatus;
 
     if (!isAnyModalOpen) {
       return undefined;
@@ -177,18 +207,10 @@ export function ReservationsManager() {
       if (event.key === "Escape") {
         if (!isAnyMutationBusy) {
           setIsDatesModalOpen(false);
-        }
-
-        if (!isCreatingReservation) {
           closeCreateModal();
-        }
-
-        if (!isSavingReservation) {
           closeEditModal();
-        }
-
-        if (!isDeletingReservation) {
           closeDeleteModal();
+          closeDayStatusModal();
         }
       }
     }
@@ -200,20 +222,22 @@ export function ReservationsManager() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [
-    isDatesModalOpen,
+    dayToClose,
     isCreateModalOpen,
-    reservationToDelete,
-    reservationToEdit,
     isCreatingReservation,
+    isDatesModalOpen,
     isDeletingReservation,
     isSavingReservation,
+    isUpdatingDayStatus,
+    reservationToDelete,
+    reservationToEdit,
   ]);
 
-  const selectedDateIndex = availableDates.findIndex((date) => date === selectedDate);
-  const previousDate = availableDates[selectedDateIndex - 1] ?? null;
-  const nextDate = availableDates[selectedDateIndex + 1] ?? null;
-  const minimumAvailableDate = availableDates[0] ?? "";
-  const maximumAvailableDate = availableDates[availableDates.length - 1] ?? "";
+  const selectedDateIndex = availableDateValues.findIndex((date) => date === selectedDate);
+  const previousDate = availableDateValues[selectedDateIndex - 1] ?? null;
+  const nextDate = availableDateValues[selectedDateIndex + 1] ?? null;
+  const minimumAvailableDate = availableDateValues[0] ?? "";
+  const maximumAvailableDate = availableDateValues[availableDateValues.length - 1] ?? "";
 
   function closeEditModal() {
     setReservationToEdit(null);
@@ -231,6 +255,12 @@ export function ReservationsManager() {
     setReservationToDelete(null);
     setDeleteErrorMessage(null);
     setIsDeletingReservation(false);
+  }
+
+  function closeDayStatusModal() {
+    setDayToClose(null);
+    setCloseDayErrorMessage(null);
+    setIsUpdatingDayStatus(false);
   }
 
   async function handleReservationCreate(payload: CreateReservationRequestDto) {
@@ -300,6 +330,56 @@ export function ReservationsManager() {
     }
   }
 
+  async function handleDayCloseConfirm() {
+    if (!dayToClose) {
+      return;
+    }
+
+    setIsUpdatingDayStatus(true);
+    setCloseDayErrorMessage(null);
+
+    try {
+      const response = await closeReservationDayClient({ date: dayToClose.date });
+
+      await refreshAvailableDates();
+      await loadReservations(dayToClose.date);
+
+      closeDayStatusModal();
+      setPendingAction(
+        response.warning ||
+          (response.existingReservationsCount > 0
+            ? `Dia cerrado. Quedaron ${response.existingReservationsCount} reservas activas para revisar manualmente.`
+            : "Dia cerrado correctamente."),
+      );
+    } catch (error) {
+      setCloseDayErrorMessage(
+        error instanceof Error ? error.message : "No se pudo cerrar la fecha.",
+      );
+      setIsUpdatingDayStatus(false);
+    }
+  }
+
+  async function handleDayReopen() {
+    setPendingAction(null);
+    setCloseDayErrorMessage(null);
+    setIsUpdatingDayStatus(true);
+
+    try {
+      await reopenReservationDayClient(selectedDate);
+      await refreshAvailableDates();
+      await loadReservations(selectedDate);
+      setPendingAction(`Dia reabierto: ${formatLongDate(selectedDate)}.`);
+    } catch (error) {
+      setPendingAction(null);
+      setCloseDayErrorMessage(null);
+      setDatesErrorMessage(
+        error instanceof Error ? error.message : "No se pudo reabrir la fecha.",
+      );
+    } finally {
+      setIsUpdatingDayStatus(false);
+    }
+  }
+
   return (
     <section className="surface-stack">
       <header className="hero-card hero-card--management">
@@ -340,7 +420,7 @@ export function ReservationsManager() {
           <p className="hero-copy">
             {isLoadingDates
               ? "Consultando agenda general para habilitar la navegacion."
-              : `${availableDates.length} fechas disponibles para navegar.`}
+              : `${availableDates.length} fechas configuradas, ${openAvailableDates.length} abiertas para tomar reservas.`}
           </p>
         </div>
       </header>
@@ -363,8 +443,9 @@ export function ReservationsManager() {
                 setCreateErrorMessage(null);
                 setIsCreateModalOpen(true);
               }}
+              disabled={isSelectedDateClosed || openAvailableDates.length === 0}
             >
-              Crear reserva
+              {isSelectedDateClosed ? "Dia cerrado" : "Crear reserva"}
             </button>
           </div>
 
@@ -375,13 +456,19 @@ export function ReservationsManager() {
             </div>
           ) : null}
 
+          {closeDayErrorMessage && !dayToClose ? (
+            <div className="management-feedback management-feedback--danger" role="alert">
+              {closeDayErrorMessage}
+            </div>
+          ) : null}
+
           <div className="schedule-toolbar">
             <button
               type="button"
               className="action-button action-button--compact schedule-toolbar__nav-button"
               onClick={() => {
                 if (previousDate) {
-                  handleDateChange(previousDate, availableDates, setSelectedDate);
+                  handleDateChange(previousDate, availableDateValues, setSelectedDate);
                   setPendingAction(null);
                 }
               }}
@@ -401,7 +488,7 @@ export function ReservationsManager() {
                 onChange={(event) => {
                   const nextSelectedDate = event.target.value;
 
-                  handleDateChange(nextSelectedDate, availableDates, setSelectedDate);
+                  handleDateChange(nextSelectedDate, availableDateValues, setSelectedDate);
                   setPendingAction(null);
                 }}
                 disabled={availableDates.length === 0 || isLoadingDates}
@@ -413,7 +500,7 @@ export function ReservationsManager() {
               className="action-button action-button--compact schedule-toolbar__nav-button schedule-toolbar__nav-button--next"
               onClick={() => {
                 if (nextDate) {
-                  handleDateChange(nextDate, availableDates, setSelectedDate);
+                  handleDateChange(nextDate, availableDateValues, setSelectedDate);
                   setPendingAction(null);
                 }
               }}
@@ -422,6 +509,60 @@ export function ReservationsManager() {
               <span>Dia siguiente</span>
               <ChevronRightIcon />
             </button>
+          </div>
+
+          <div className="schedule-day-status">
+            <div className="schedule-day-status__summary">
+              <span className="schedule-day-status__label">Estado operativo</span>
+              <div className="schedule-day-status__meta">
+                <strong>{isSelectedDateClosed ? "Dia cerrado" : "Dia abierto"}</strong>
+                <span
+                  className={`day-status-badge${
+                    isSelectedDateClosed ? " is-closed" : " is-open"
+                  }`}
+                >
+                  {isSelectedDateClosed ? "Cerrado" : "Abierto"}
+                </span>
+              </div>
+              <p>
+                {isSelectedDateClosed
+                  ? "No se aceptan nuevas reservas para esta fecha hasta que vuelvas a abrirla."
+                  : "La fecha admite nuevas reservas y movimientos desde el dashboard."}
+              </p>
+            </div>
+
+            <div className="schedule-day-status__actions">
+              {isSelectedDateClosed ? (
+                <button
+                  type="button"
+                  className="action-button"
+                  onClick={() => {
+                    void handleDayReopen();
+                  }}
+                  disabled={isUpdatingDayStatus}
+                >
+                  {isUpdatingDayStatus ? "Reabriendo dia" : "Reabrir dia"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="action-button action-button--subtle-danger"
+                  onClick={() => {
+                    setPendingAction(null);
+                    setCloseDayErrorMessage(null);
+                    setDayToClose({
+                      date: selectedDate,
+                      formattedDate: formatLongDate(selectedDate),
+                      reservationCount: reservationsViewModel?.reservationCount ?? 0,
+                      dayStatus: selectedDayStatus,
+                    });
+                  }}
+                  disabled={isLoadingReservations || isUpdatingDayStatus}
+                >
+                  Cerrar dia
+                </button>
+              )}
+            </div>
           </div>
 
           {reservationsErrorMessage ? (
@@ -449,6 +590,15 @@ export function ReservationsManager() {
                 <strong>{reservationsViewModel.totalCapacity}</strong>
                 <p>Cupo total informado por la agenda del backend.</p>
               </article>
+              <article className="stat-card">
+                <span>Estado</span>
+                <strong>{isSelectedDateClosed ? "Cerrado" : "Abierto"}</strong>
+                <p>
+                  {isSelectedDateClosed
+                    ? "Solo se permiten revisiones manuales sobre reservas existentes."
+                    : "Se pueden tomar nuevas reservas desde el dashboard."}
+                </p>
+              </article>
             </div>
           ) : null}
 
@@ -468,8 +618,9 @@ export function ReservationsManager() {
                 <span>Agenda sin bloques</span>
                 <strong>No hay reservas para la fecha seleccionada</strong>
                 <p>
-                  La fecha esta habilitada en agenda, pero no devolvio reservas ni
-                  franjas con ocupacion visible.
+                  {isSelectedDateClosed
+                    ? "La fecha esta cerrada y no hay reservas activas visibles en la agenda."
+                    : "La fecha esta habilitada en agenda, pero no devolvio reservas ni franjas con ocupacion visible."}
                 </p>
               </div>
             ) : null}
@@ -499,10 +650,7 @@ export function ReservationsManager() {
 
                     {block.items.map((reservation) => {
                       return (
-                        <article
-                          key={reservation.id}
-                          className="reservation-card"
-                        >
+                        <article key={reservation.id} className="reservation-card">
                           <button
                             type="button"
                             className="reservation-card__body"
@@ -596,28 +744,45 @@ export function ReservationsManager() {
               ) : (
                 availableDates.map((availableDate) => (
                   <button
-                    key={availableDate}
+                    key={availableDate.date}
                     type="button"
                     className={`available-date-chip${
-                      availableDate === selectedDate ? " is-active" : ""
-                    }`}
+                      availableDate.date === selectedDate ? " is-active" : ""
+                    }${availableDate.isClosed ? " is-closed" : ""}`}
                     onClick={() => {
                       handleDateChange(
-                        availableDate,
-                        availableDates,
+                        availableDate.date,
+                        availableDateValues,
                         setSelectedDate,
                       );
                       setPendingAction(null);
                       setIsDatesModalOpen(false);
                     }}
                   >
-                    {formatLongDate(availableDate)}
+                    <span>{formatLongDate(availableDate.date)}</span>
+                    <span
+                      className={`day-status-badge${
+                        availableDate.isClosed ? " is-closed" : " is-open"
+                      }`}
+                    >
+                      {availableDate.isClosed ? "Cerrado" : "Abierto"}
+                    </span>
                   </button>
                 ))
               )}
             </div>
           </div>
         </div>
+      ) : null}
+
+      {dayToClose ? (
+        <ReservationDayStatusModal
+          closeErrorMessage={closeDayErrorMessage}
+          isSubmitting={isUpdatingDayStatus}
+          target={dayToClose}
+          onClose={closeDayStatusModal}
+          onConfirm={handleDayCloseConfirm}
+        />
       ) : null}
 
       {reservationToEdit ? (
@@ -634,7 +799,7 @@ export function ReservationsManager() {
       {isCreateModalOpen ? (
         <ReservationCreateModal
           availableDates={availableDates}
-          initialDate={selectedDate}
+          initialDate={getCreateInitialDate(selectedDate, openAvailableDateValues, todayDate)}
           isSubmitting={isCreatingReservation}
           submitErrorMessage={createErrorMessage}
           onClose={closeCreateModal}
@@ -681,12 +846,31 @@ function handleDateChange(
   setSelectedDate(nextDate);
 }
 
-function getNextSelectedDate(currentDate: string, availableDates: string[]) {
-  if (availableDates.includes(currentDate)) {
+function getNextSelectedDate(
+  currentDate: string,
+  availableDates: AvailableReservationDateDto[],
+  todayDate: string,
+) {
+  if (availableDates.some((date) => date.date === currentDate)) {
     return currentDate;
   }
 
-  return getInitialDate(getTodayDate(), availableDates);
+  return getInitialDate(
+    todayDate,
+    availableDates.map((date) => date.date),
+  );
+}
+
+function getCreateInitialDate(
+  selectedDate: string,
+  openAvailableDates: string[],
+  todayDate: string,
+) {
+  if (openAvailableDates.includes(selectedDate)) {
+    return selectedDate;
+  }
+
+  return getInitialDate(todayDate, openAvailableDates);
 }
 
 function formatCompactDate(value: string) {

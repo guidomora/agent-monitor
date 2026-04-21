@@ -2,10 +2,13 @@ import { AxiosError } from "axios";
 import { backendApi } from "@/infrastructure/http/backend-api";
 import type {
   AvailableReservationDatesResponseDto,
+  CloseReservationDayRequestDto,
+  CloseReservationDayResponseDto,
   CreateReservationRequestDto,
   CreateReservationResponseDto,
   DeleteReservationRequestDto,
   DeleteReservationResponseDto,
+  ReopenReservationDayResponseDto,
   ReservationSlotsByDateResponseDto,
   ReservationsByDateResponseDto,
   UpdateReservationRequestDto,
@@ -111,6 +114,40 @@ export async function deleteReservation(payload: DeleteReservationRequestDto) {
     return response.data;
   } catch (error) {
     throw createReservationServiceError(error, "No se pudo eliminar la reserva.");
+  }
+}
+
+export async function closeReservationDay({
+  date,
+  reason,
+}: CloseReservationDayRequestDto) {
+  try {
+    const response = await backendApi.put<CloseReservationDayResponseDto>(
+      `bot/reservations/closed-days/${date}`,
+      reason ? { reason } : undefined,
+      {
+        timeout: 30000,
+      },
+    );
+
+    return response.data;
+  } catch (error) {
+    throw createReservationServiceError(error, "No se pudo cerrar la fecha.");
+  }
+}
+
+export async function reopenReservationDay(date: string) {
+  try {
+    const response = await backendApi.delete<ReopenReservationDayResponseDto>(
+      `bot/reservations/closed-days/${date}`,
+      {
+        timeout: 30000,
+      },
+    );
+
+    return response.data;
+  } catch (error) {
+    throw createReservationServiceError(error, "No se pudo reabrir la fecha.");
   }
 }
 

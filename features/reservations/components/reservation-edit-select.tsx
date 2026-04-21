@@ -4,7 +4,9 @@ import { useEffect, useId, useRef, useState } from "react";
 import { ChevronRightIcon } from "@/features/reservations/components/chevron-right-icon";
 
 export type ReservationEditSelectOption = {
+  disabled?: boolean;
   description?: string;
+  label?: string;
   value: string;
 };
 
@@ -77,7 +79,9 @@ export function ReservationEditSelect({
       >
         <span className="reservation-edit-select__value">
           {selectedOption ? (
-            <span className="reservation-edit-select__time">{selectedOption.value}</span>
+            <span className="reservation-edit-select__time">
+              {selectedOption.label ?? selectedOption.value}
+            </span>
           ) : (
             <span className="reservation-edit-select__placeholder">{emptyLabel}</span>
           )}
@@ -106,15 +110,20 @@ export function ReservationEditSelect({
                   type="button"
                   role="option"
                   aria-selected={isSelected}
+                  disabled={option.disabled}
                   className={`reservation-edit-select__option${
                     isSelected ? " is-selected" : ""
-                  }`}
+                  }${option.disabled ? " is-disabled" : ""}`}
                   onClick={() => {
-                    onChange(option.value);
-                    setIsOpen(false);
+                    if (!option.disabled) {
+                      onChange(option.value);
+                      setIsOpen(false);
+                    }
                   }}
                 >
-                  <span className="reservation-edit-select__time">{option.value}</span>
+                  <span className="reservation-edit-select__time">
+                    {option.label ?? option.value}
+                  </span>
                   {option.description ? (
                     <span className="reservation-edit-select__option-description">
                       {option.description}

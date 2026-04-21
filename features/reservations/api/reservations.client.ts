@@ -1,16 +1,21 @@
 import type {
+  CloseReservationDayRequestDto,
+  CloseReservationDayResponseDto,
   CreateReservationRequestDto,
   CreateReservationResponseDto,
   DeleteReservationRequestDto,
   DeleteReservationResponseDto,
+  ReopenReservationDayResponseDto,
   ReservationSlotsByDateResponseDto,
   ReservationsByDateResponseDto,
   UpdateReservationRequestDto,
   UpdateReservationResponseDto,
 } from "@/features/reservations/types/reservations.dto";
 import type {
+  CloseReservationDayClientErrorResponse,
   CreateReservationClientErrorResponse,
   DeleteReservationClientErrorResponse,
+  ReopenReservationDayClientErrorResponse,
   ReservationSlotsByDateQuery,
   ReservationsByDateQuery,
   ReservationsClientErrorResponse,
@@ -113,6 +118,45 @@ export async function deleteReservationClient(payload: DeleteReservationRequestD
   }
 
   return (await response.json()) as DeleteReservationResponseDto;
+}
+
+export async function closeReservationDayClient({
+  date,
+  reason,
+}: CloseReservationDayRequestDto) {
+  const response = await fetch(`/api/reservations/closed-days/${date}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
+
+  if (!response.ok) {
+    const errorPayload =
+      (await response.json().catch(() => null)) as CloseReservationDayClientErrorResponse | null;
+    const message = getClientErrorMessage(errorPayload?.message);
+
+    throw new Error(message || "No se pudo cerrar la fecha.");
+  }
+
+  return (await response.json()) as CloseReservationDayResponseDto;
+}
+
+export async function reopenReservationDayClient(date: string) {
+  const response = await fetch(`/api/reservations/closed-days/${date}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const errorPayload =
+      (await response.json().catch(() => null)) as ReopenReservationDayClientErrorResponse | null;
+    const message = getClientErrorMessage(errorPayload?.message);
+
+    throw new Error(message || "No se pudo reabrir la fecha.");
+  }
+
+  return (await response.json()) as ReopenReservationDayResponseDto;
 }
 
 function getClientErrorMessage(message?: string | string[]): string | undefined {

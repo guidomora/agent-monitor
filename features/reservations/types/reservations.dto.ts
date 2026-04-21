@@ -13,6 +13,11 @@ export type ReservationSlotApiDto = {
   available: number;
 };
 
+export type AvailableReservationDateDto = {
+  date: string;
+  isClosed: boolean;
+};
+
 export type ReservationsByDateResponseDto = {
   date: string;
   sheetDate: string;
@@ -24,7 +29,7 @@ export type ReservationsByDateResponseDto = {
 };
 
 export type AvailableReservationDatesResponseDto = {
-  dates: string[];
+  dates: AvailableReservationDateDto[];
 };
 
 export type ReservationSlotsByDateResponseDto = {
@@ -70,4 +75,22 @@ export type CreateReservationResponseDto = {
 export type DeleteReservationResponseDto = {
   message: string;
   reservation: ReservationApiDto;
+};
+
+export type CloseReservationDayRequestDto = {
+  date: string;
+  reason?: string;
+};
+
+export type CloseReservationDayResponseDto = {
+  date: string;
+  isClosed: true;
+  reason?: string;
+  existingReservationsCount: number;
+  warning?: string;
+};
+
+export type ReopenReservationDayResponseDto = {
+  date: string;
+  isClosed: false;
 };

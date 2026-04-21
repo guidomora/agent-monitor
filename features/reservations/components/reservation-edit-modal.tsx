@@ -9,12 +9,13 @@ import type {
   ReservationEditTarget,
 } from "@/features/reservations/types/reservation-edit.types";
 import type {
+  AvailableReservationDateDto,
   ReservationSlotApiDto,
   UpdateReservationRequestDto,
 } from "@/features/reservations/types/reservations.dto";
 
 type ReservationEditModalProps = {
-  availableDates: string[];
+  availableDates: AvailableReservationDateDto[];
   isSubmitting: boolean;
   reservationToEdit: ReservationEditTarget;
   submitErrorMessage: string | null;
@@ -50,6 +51,32 @@ export function ReservationEditModal({
     let isMounted = true;
 
     async function loadSlots() {
+      const selectedDateStatus = availableDates.find((date) => date.date === formValues.date);
+      const isCurrentClosedDate =
+        selectedDateStatus?.isClosed && formValues.date === reservationToEdit.currentDate;
+
+      if (isCurrentClosedDate) {
+        setSlotOptions([
+          {
+            time: reservationToEdit.reservation.time,
+            reserved: reservationToEdit.reservation.partySize,
+            available: 0,
+          },
+        ]);
+        setSlotsErrorMessage(
+          "La fecha de esta reserva esta cerrada. Solo podes mantener el horario actual o moverla a una fecha abierta.",
+        );
+        setIsLoadingSlots(false);
+        return;
+      }
+
+      if (selectedDateStatus?.isClosed) {
+        setSlotOptions([]);
+        setSlotsErrorMessage("La fecha seleccionada esta cerrada y no admite reservas.");
+        setIsLoadingSlots(false);
+        return;
+      }
+
       setIsLoadingSlots(true);
       setSlotsErrorMessage(null);
 
@@ -101,7 +128,7 @@ export function ReservationEditModal({
     return () => {
       isMounted = false;
     };
-  }, [formValues.date, reservationToEdit]);
+  }, [availableDates, formValues.date, reservationToEdit]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -197,7 +224,14 @@ export function ReservationEditModal({
                       date: nextDate,
                     }))}
                   options={availableDates.map((date) => ({
-                    value: date,
+                    value: date.date,
+                    label: formatDateOptionLabel(date.date),
+                    description:
+                      date.isClosed && date.date !== reservationToEdit.currentDate
+                        ? "Cerrado"
+                        : undefined,
+                    disabled:
+                      date.isClosed && date.date !== reservationToEdit.currentDate,
                   }))}
                 />
               ) : (
@@ -498,4 +532,14 @@ function getSlotDescription(
     slot.available === 1 ? "1 lugar disponible" : `${slot.available} lugares disponibles`;
 
   return availabilityLabel;
+}
+
+function formatDateOptionLabel(value: string) {
+  const formatted = new Intl.DateTimeFormat("es-AR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(new Date(`${value}T12:00:00`));
+
+  return `${formatted.charAt(0).toUpperCase()}${formatted.slice(1)}`;
 }
