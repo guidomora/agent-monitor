@@ -21,3 +21,11 @@ export type UpdateReservationClientErrorResponse = {
 export type DeleteReservationClientErrorResponse = {
   message?: string | string[];
 };
+
+export type CloseReservationDayClientErrorResponse = {
+  message?: string | string[];
+};
+
+export type ReopenReservationDayClientErrorResponse = {
+  message?: string | string[];
+};

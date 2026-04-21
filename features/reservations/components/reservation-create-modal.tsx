@@ -6,12 +6,13 @@ import { ReservationEditLoader } from "@/features/reservations/components/reserv
 import { ReservationEditSelect } from "@/features/reservations/components/reservation-edit-select";
 import type { ReservationCreateFormValues } from "@/features/reservations/types/reservation-create.types";
 import type {
+  AvailableReservationDateDto,
   CreateReservationRequestDto,
   ReservationSlotApiDto,
 } from "@/features/reservations/types/reservations.dto";
 
 type ReservationCreateModalProps = {
-  availableDates: string[];
+  availableDates: AvailableReservationDateDto[];
   initialDate: string;
   isSubmitting: boolean;
   submitErrorMessage: string | null;
@@ -48,6 +49,15 @@ export function ReservationCreateModal({
     let isMounted = true;
 
     async function loadSlots() {
+      const selectedDateStatus = availableDates.find((date) => date.date === formValues.date);
+
+      if (selectedDateStatus?.isClosed) {
+        setSlotOptions([]);
+        setSlotsErrorMessage("La fecha seleccionada esta cerrada y no admite nuevas reservas.");
+        setIsLoadingSlots(false);
+        return;
+      }
+
       setIsLoadingSlots(true);
       setSlotsErrorMessage(null);
 
@@ -91,7 +101,7 @@ export function ReservationCreateModal({
     return () => {
       isMounted = false;
     };
-  }, [formValues.date]);
+  }, [availableDates, formValues.date]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -180,7 +190,10 @@ export function ReservationCreateModal({
                       date: nextDate,
                     }))}
                   options={availableDates.map((date) => ({
-                    value: date,
+                    value: date.date,
+                    label: formatDateOptionLabel(date.date),
+                    description: date.isClosed ? "Cerrado" : undefined,
+                    disabled: date.isClosed,
                   }))}
                 />
               ) : (
@@ -402,4 +415,14 @@ function getSlotDescription(slot: ReservationSlotApiDto) {
   return slot.available === 1
     ? "1 lugar disponible"
     : `${slot.available} lugares disponibles`;
+}
+
+function formatDateOptionLabel(value: string) {
+  const formatted = new Intl.DateTimeFormat("es-AR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(new Date(`${value}T12:00:00`));
+
+  return `${formatted.charAt(0).toUpperCase()}${formatted.slice(1)}`;
 }
