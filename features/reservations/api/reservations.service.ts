@@ -4,6 +4,8 @@ import type {
   AvailableReservationDatesResponseDto,
   CloseReservationDayRequestDto,
   CloseReservationDayResponseDto,
+  CloseReservationSlotRequestDto,
+  CloseReservationSlotResponseDto,
   CreateReservationRequestDto,
   CreateReservationResponseDto,
   DeleteReservationRequestDto,
@@ -148,6 +150,31 @@ export async function reopenReservationDay(date: string) {
     return response.data;
   } catch (error) {
     throw createReservationServiceError(error, "No se pudo reabrir la fecha.");
+  }
+}
+
+export async function closeReservationSlot({
+  date,
+  fromTime,
+  toTime,
+  reason,
+}: CloseReservationSlotRequestDto) {
+  try {
+    const response = await backendApi.put<CloseReservationSlotResponseDto>(
+      `bot/reservations/closed-slots/${date}`,
+      {
+        fromTime,
+        toTime,
+        reason,
+      },
+      {
+        timeout: 30000,
+      },
+    );
+
+    return response.data;
+  } catch (error) {
+    throw createReservationServiceError(error, "No se pudo cerrar la franja horaria.");
   }
 }
 

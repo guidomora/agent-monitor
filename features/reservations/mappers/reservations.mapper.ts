@@ -55,13 +55,19 @@ export function mapReservationsOverview(
 export function mapReservationManagement(
   response: ReservationsByDateResponseDto,
 ): ReservationManagementViewModel {
+  const hourBlocks = getAllHourBlocks(response);
+
   return {
     date: response.date,
     formattedDateLabel: formatFullDateLabel(response.date),
     reservationCount: response.reservationsCount,
     totalPeopleReserved: response.totalPeopleReserved,
     totalCapacity: response.totalCapacity,
-    hourBlocks: getAllHourBlocks(response),
+    closedSlotCount: hourBlocks.filter((block) => block.isClosed).length,
+    slotTimes: response.slots
+      .map((slot) => slot.time)
+      .sort((leftTime, rightTime) => leftTime.localeCompare(rightTime)),
+    hourBlocks,
   };
 }
 
@@ -172,6 +178,8 @@ function createTimelineBlock(
         ? `${reserved}/${totalCapacity} cubiertos tomados`
         : `${reserved} cubiertos tomados`,
     occupancy,
+    isClosed: slot?.isClosed ?? false,
+    closedReason: slot?.reason ?? null,
     items: sortedItems,
   };
 }

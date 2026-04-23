@@ -1,6 +1,8 @@
 import type {
   CloseReservationDayRequestDto,
   CloseReservationDayResponseDto,
+  CloseReservationSlotRequestDto,
+  CloseReservationSlotResponseDto,
   CreateReservationRequestDto,
   CreateReservationResponseDto,
   DeleteReservationRequestDto,
@@ -13,6 +15,7 @@ import type {
 } from "@/features/reservations/types/reservations.dto";
 import type {
   CloseReservationDayClientErrorResponse,
+  CloseReservationSlotClientErrorResponse,
   CreateReservationClientErrorResponse,
   DeleteReservationClientErrorResponse,
   ReopenReservationDayClientErrorResponse,
@@ -157,6 +160,35 @@ export async function reopenReservationDayClient(date: string) {
   }
 
   return (await response.json()) as ReopenReservationDayResponseDto;
+}
+
+export async function closeReservationSlotClient({
+  date,
+  fromTime,
+  toTime,
+  reason,
+}: CloseReservationSlotRequestDto) {
+  const response = await fetch(`/api/reservations/closed-slots/${date}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fromTime,
+      toTime,
+      reason,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorPayload =
+      (await response.json().catch(() => null)) as CloseReservationSlotClientErrorResponse | null;
+    const message = getClientErrorMessage(errorPayload?.message);
+
+    throw new Error(message || "No se pudo cerrar la franja horaria.");
+  }
+
+  return (await response.json()) as CloseReservationSlotResponseDto;
 }
 
 function getClientErrorMessage(message?: string | string[]): string | undefined {

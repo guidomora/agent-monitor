@@ -18,5 +18,7 @@ export type ReservationManagementViewModel = {
   reservationCount: number;
   totalPeopleReserved: number;
   totalCapacity: number;
+  closedSlotCount: number;
+  slotTimes: string[];
   hourBlocks: ReservationTimelineBlock[];
 };

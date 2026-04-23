@@ -407,7 +407,7 @@ function createReservationPayload(
 
 function getSelectableSlots(slots: ReservationSlotApiDto[]) {
   return slots
-    .filter((slot) => slot.available > 0)
+    .filter((slot) => slot.available > 0 && !slot.isClosed)
     .sort((left, right) => left.time.localeCompare(right.time));
 }
 
