@@ -61,6 +61,8 @@ export function ReservationEditModal({
             time: reservationToEdit.reservation.time,
             reserved: reservationToEdit.reservation.partySize,
             available: 0,
+            isClosed: false,
+            reason: null,
           },
         ]);
         setSlotsErrorMessage(
@@ -157,6 +159,7 @@ export function ReservationEditModal({
   );
   const timeSelectOptions = slotOptions.map((slot) => ({
     value: slot.time,
+    label: formatSlotLabel(slot, reservationToEdit, formValues.date),
     description: getSlotDescription(slot, reservationToEdit, formValues.date),
   }));
 
@@ -459,7 +462,7 @@ function getSelectableSlots(
   reservationToEdit: ReservationEditTarget,
   selectedDate: string,
 ) {
-  const selectableSlots = slots.filter((slot) => slot.available > 0);
+  const selectableSlots = slots.filter((slot) => !slot.isClosed && slot.available > 0);
   const shouldKeepCurrentTime =
     selectedDate === reservationToEdit.currentDate &&
     !selectableSlots.some((slot) => slot.time === reservationToEdit.reservation.time);
@@ -478,6 +481,8 @@ function getSelectableSlots(
         time: reservationToEdit.reservation.time,
         reserved: reservationToEdit.reservation.partySize,
         available: 0,
+        isClosed: false,
+        reason: null,
       },
       ...selectableSlots,
     ].sort((left, right) => left.time.localeCompare(right.time));
@@ -526,6 +531,10 @@ function getSlotDescription(
 
   if (isCurrentReservationTime && slot.available <= 0) {
     return "horario actual";
+  }
+
+  if (slot.isClosed) {
+    return slot.reason ? `franja cerrada: ${slot.reason}` : "franja cerrada";
   }
 
   const availabilityLabel =

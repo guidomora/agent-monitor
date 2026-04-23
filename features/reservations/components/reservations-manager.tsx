@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getAvailableReservationDatesClient } from "@/features/reservations/api/available-dates.client";
 import {
   closeReservationDayClient,
+  closeReservationSlotClient,
   createReservationClient,
   deleteReservationClient,
   getReservationsByDateClient,
@@ -16,13 +17,16 @@ import { ReservationCreateModal } from "@/features/reservations/components/reser
 import { ReservationDayStatusModal } from "@/features/reservations/components/reservation-day-status-modal";
 import { ReservationDeleteModal } from "@/features/reservations/components/reservation-delete-modal";
 import { ReservationEditModal } from "@/features/reservations/components/reservation-edit-modal";
+import { ReservationSlotStatusModal } from "@/features/reservations/components/reservation-slot-status-modal";
 import { mapReservationManagement } from "@/features/reservations/mappers/reservations.mapper";
 import type { ReservationClosedDayTarget } from "@/features/reservations/types/closed-day.types";
+import type { ReservationClosedSlotTarget } from "@/features/reservations/types/closed-slot.types";
 import type { ReservationDeleteTarget } from "@/features/reservations/types/reservation-delete.types";
 import type { ReservationEditTarget } from "@/features/reservations/types/reservation-edit.types";
 import type { ReservationManagementViewModel } from "@/features/reservations/types/reservation.view-model";
 import type {
   AvailableReservationDateDto,
+  CloseReservationSlotRequestDto,
   CreateReservationRequestDto,
   DeleteReservationRequestDto,
   UpdateReservationRequestDto,
@@ -67,6 +71,9 @@ export function ReservationsManager() {
   const [dayToClose, setDayToClose] = useState<ReservationClosedDayTarget | null>(null);
   const [closeDayErrorMessage, setCloseDayErrorMessage] = useState<string | null>(null);
   const [isUpdatingDayStatus, setIsUpdatingDayStatus] = useState(false);
+  const [slotToClose, setSlotToClose] = useState<ReservationClosedSlotTarget | null>(null);
+  const [closeSlotErrorMessage, setCloseSlotErrorMessage] = useState<string | null>(null);
+  const [isClosingSlot, setIsClosingSlot] = useState(false);
 
   const availableDateValues = availableDates.map((date) => date.date);
   const openAvailableDates = availableDates.filter((date) => !date.isClosed);
@@ -188,12 +195,14 @@ export function ReservationsManager() {
       isCreateModalOpen ||
       reservationToEdit !== null ||
       reservationToDelete !== null ||
-      dayToClose !== null;
+      dayToClose !== null ||
+      slotToClose !== null;
     const isAnyMutationBusy =
       isCreatingReservation ||
       isSavingReservation ||
       isDeletingReservation ||
-      isUpdatingDayStatus;
+      isUpdatingDayStatus ||
+      isClosingSlot;
 
     if (!isAnyModalOpen) {
       return undefined;
@@ -211,6 +220,7 @@ export function ReservationsManager() {
           closeEditModal();
           closeDeleteModal();
           closeDayStatusModal();
+          closeSlotStatusModal();
         }
       }
     }
@@ -225,10 +235,12 @@ export function ReservationsManager() {
     dayToClose,
     isCreateModalOpen,
     isCreatingReservation,
+    isClosingSlot,
     isDatesModalOpen,
     isDeletingReservation,
     isSavingReservation,
     isUpdatingDayStatus,
+    slotToClose,
     reservationToDelete,
     reservationToEdit,
   ]);
@@ -261,6 +273,12 @@ export function ReservationsManager() {
     setDayToClose(null);
     setCloseDayErrorMessage(null);
     setIsUpdatingDayStatus(false);
+  }
+
+  function closeSlotStatusModal() {
+    setSlotToClose(null);
+    setCloseSlotErrorMessage(null);
+    setIsClosingSlot(false);
   }
 
   async function handleReservationCreate(payload: CreateReservationRequestDto) {
@@ -379,6 +397,33 @@ export function ReservationsManager() {
       setIsUpdatingDayStatus(false);
     }
   }
+
+  async function handleSlotClose(payload: CloseReservationSlotRequestDto) {
+    setIsClosingSlot(true);
+    setCloseSlotErrorMessage(null);
+
+    try {
+      const response = await closeReservationSlotClient(payload);
+
+      await loadReservations(payload.date);
+
+      closeSlotStatusModal();
+      setPendingAction(
+        response.warning ||
+          `Franja cerrada de ${response.fromTime} a ${response.toTime}${
+            response.reason ? ` (${response.reason})` : ""
+          }.`,
+      );
+    } catch (error) {
+      setCloseSlotErrorMessage(
+        error instanceof Error ? error.message : "No se pudo cerrar la franja horaria.",
+      );
+      setIsClosingSlot(false);
+    }
+  }
+
+  const slotTimes = reservationsViewModel?.slotTimes ?? [];
+  const canCloseSlots = !isSelectedDateClosed && slotTimes.length > 1;
 
   return (
     <section className="surface-stack">
@@ -565,6 +610,56 @@ export function ReservationsManager() {
             </div>
           </div>
 
+          <div className="schedule-slot-status">
+            <div className="schedule-slot-status__summary">
+              <span className="schedule-day-status__label">Franjas horarias</span>
+              <div className="schedule-day-status__meta">
+                <strong>
+                  {reservationsViewModel?.closedSlotCount ?? 0} franja
+                  {(reservationsViewModel?.closedSlotCount ?? 0) === 1 ? "" : "s"} cerrada
+                  {(reservationsViewModel?.closedSlotCount ?? 0) === 1 ? "" : "s"}
+                </strong>
+                <span
+                  className={`day-status-badge${
+                    (reservationsViewModel?.closedSlotCount ?? 0) > 0 ? " is-closed" : " is-open"
+                  }`}
+                >
+                  {(reservationsViewModel?.closedSlotCount ?? 0) > 0
+                    ? "Con cierres parciales"
+                    : "Sin cierres parciales"}
+                </span>
+              </div>
+              <p>
+                {isSelectedDateClosed
+                  ? "El dia completo esta cerrado, asi que ese estado prevalece sobre cualquier cierre por franja existente."
+                  : "Podes cerrar una franja puntual del dia. El backend consolida rangos contiguos o solapados y devuelve el rango final como referencia."}
+              </p>
+            </div>
+
+            <div className="schedule-slot-status__actions">
+              <button
+                type="button"
+                className="action-button action-button--subtle-danger"
+                onClick={() => {
+                  if (!reservationsViewModel) {
+                    return;
+                  }
+
+                  setPendingAction(null);
+                  setCloseSlotErrorMessage(null);
+                  setSlotToClose({
+                    date: reservationsViewModel.date,
+                    formattedDate: reservationsViewModel.formattedDateLabel,
+                    availableTimes: reservationsViewModel.slotTimes,
+                  });
+                }}
+                disabled={!canCloseSlots || isLoadingReservations || isClosingSlot}
+              >
+                {isSelectedDateClosed ? "Dia cerrado" : "Cerrar franja"}
+              </button>
+            </div>
+          </div>
+
           {reservationsErrorMessage ? (
             <div className="note-card">
               <span>Error</span>
@@ -599,6 +694,11 @@ export function ReservationsManager() {
                     : "Se pueden tomar nuevas reservas desde el dashboard."}
                 </p>
               </article>
+              <article className="stat-card">
+                <span>Franjas cerradas</span>
+                <strong>{reservationsViewModel.closedSlotCount}</strong>
+                <p>Bloques horarios cerrados parcialmente dentro del dia seleccionado.</p>
+              </article>
             </div>
           ) : null}
 
@@ -629,13 +729,26 @@ export function ReservationsManager() {
             !reservationsErrorMessage &&
             reservationsViewModel ? (
               reservationsViewModel.hourBlocks.map((block) => (
-                <div key={block.hour} className="timeline-item timeline-item--management">
+                <div
+                  key={block.hour}
+                  className={`timeline-item timeline-item--management${
+                    block.isClosed ? " timeline-item--closed" : ""
+                  }`}
+                >
                   <div className="timeline-item__hour">
                     <div className="timeline-item__hour-header">
                       <strong>{block.hour}</strong>
+                      <span
+                        className={`day-status-badge${block.isClosed ? " is-closed" : " is-open"}`}
+                      >
+                        {block.isClosed ? "Franja cerrada" : "Franja abierta"}
+                      </span>
                     </div>
                     <span>{block.capacitySummary}</span>
                     <span>{block.reservationSummary}</span>
+                    {block.closedReason ? (
+                      <p className="timeline-item__reason">{block.closedReason}</p>
+                    ) : null}
                   </div>
 
                   <div className="timeline-item__entries">
@@ -782,6 +895,16 @@ export function ReservationsManager() {
           target={dayToClose}
           onClose={closeDayStatusModal}
           onConfirm={handleDayCloseConfirm}
+        />
+      ) : null}
+
+      {slotToClose ? (
+        <ReservationSlotStatusModal
+          closeErrorMessage={closeSlotErrorMessage}
+          isSubmitting={isClosingSlot}
+          target={slotToClose}
+          onClose={closeSlotStatusModal}
+          onSubmit={handleSlotClose}
         />
       ) : null}
 

@@ -29,3 +29,7 @@ export type CloseReservationDayClientErrorResponse = {
 export type ReopenReservationDayClientErrorResponse = {
   message?: string | string[];
 };
+
+export type CloseReservationSlotClientErrorResponse = {
+  message?: string | string[];
+};

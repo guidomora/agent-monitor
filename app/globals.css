@@ -465,6 +465,13 @@ textarea {
     rgba(255, 255, 255, 0.78);
 }
 
+.timeline-item--closed {
+  border-color: rgba(217, 77, 97, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 244, 246, 0.92), rgba(255, 255, 255, 0.94)),
+    rgba(255, 255, 255, 0.84);
+}
+
 .timeline-item__hour {
   display: grid;
   gap: 8px;
@@ -673,6 +680,10 @@ textarea {
   align-items: start;
 }
 
+.crud-form__row--stacked {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .crud-form__footer,
 .crud-form__actions {
   display: flex;
@@ -789,12 +800,28 @@ textarea {
   border: 1px solid rgba(25, 31, 45, 0.06);
   border-radius: 24px;
   background:
-    linear-gradient(180deg, rgba(244, 246, 255, 0.88), rgba(255, 255, 255, 0.92)),
-    rgba(255, 255, 255, 0.9);
+      linear-gradient(180deg, rgba(244, 246, 255, 0.88), rgba(255, 255, 255, 0.92)),
+      rgba(255, 255, 255, 0.9);
+}
+
+.schedule-slot-status {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(25, 31, 45, 0.06);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 249, 0.84), rgba(255, 255, 255, 0.92)),
+    rgba(255, 255, 255, 0.88);
 }
 
 .schedule-day-status__summary,
-.schedule-day-status__actions {
+.schedule-day-status__actions,
+.schedule-slot-status__summary,
+.schedule-slot-status__actions {
   display: grid;
   gap: 10px;
 }
@@ -822,6 +849,13 @@ textarea {
 }
 
 .schedule-day-status__summary p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.schedule-slot-status__summary p,
+.timeline-item__reason {
   margin: 0;
   color: var(--muted);
   line-height: 1.7;
@@ -1798,6 +1832,7 @@ textarea {
   .reservation-card__actions,
   .reservation-card,
   .schedule-day-status,
+  .schedule-slot-status,
   .reservation-day-status-modal__stats {
     grid-template-columns: 1fr;
   }

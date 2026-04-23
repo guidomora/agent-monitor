@@ -11,6 +11,8 @@ export type ReservationSlotApiDto = {
   time: string;
   reserved: number;
   available: number;
+  isClosed: boolean;
+  reason: string | null;
 };
 
 export type AvailableReservationDateDto = {
@@ -93,4 +95,21 @@ export type CloseReservationDayResponseDto = {
 export type ReopenReservationDayResponseDto = {
   date: string;
   isClosed: false;
+};
+
+export type CloseReservationSlotRequestDto = {
+  date: string;
+  fromTime: string;
+  toTime: string;
+  reason: string;
+};
+
+export type CloseReservationSlotResponseDto = {
+  date: string;
+  fromTime: string;
+  toTime: string;
+  isClosed: true;
+  reason: string;
+  existingReservationsCount: number;
+  warning: string | null;
 };

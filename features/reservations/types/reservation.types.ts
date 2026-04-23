@@ -39,6 +39,8 @@ export type ReservationTimelineBlock = {
   reservationSummary: string;
   capacitySummary: string;
   occupancy: ReservationOccupancyIndicator;
+  isClosed: boolean;
+  closedReason: string | null;
   items: ReservationTimelineItem[];
 };
 
