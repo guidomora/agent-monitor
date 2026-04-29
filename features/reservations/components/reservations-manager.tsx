@@ -632,7 +632,7 @@ export function ReservationsManager() {
               <p>
                 {isSelectedDateClosed
                   ? "El dia completo esta cerrado, asi que ese estado prevalece sobre cualquier cierre por franja existente."
-                  : "Podes cerrar una franja puntual del dia. El backend consolida rangos contiguos o solapados y devuelve el rango final como referencia."}
+                  : "Podes cerrar una franja puntual del dia. El sistema consolida rangos contiguos o solapados y devuelve el rango final como referencia."}
               </p>
             </div>
 

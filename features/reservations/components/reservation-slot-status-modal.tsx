@@ -91,7 +91,7 @@ export function ReservationSlotStatusModal({
         <div className="reservation-delete-modal__summary reservation-day-status-modal__summary">
           <p>
             Vas a cerrar una franja puntual dentro de <strong>{target.formattedDate}</strong>.
-            El horario final es exclusivo y el backend puede consolidar el rango si toca otro ya
+            El horario final es exclusivo y el sistema puede consolidar el rango si toca otro ya
             cerrado.
           </p>
           <div className="reservation-day-status-modal__stats">
@@ -146,6 +146,10 @@ export function ReservationSlotStatusModal({
           <div className="crud-form__row crud-form__row--stacked">
             <label>
               <span>Motivo</span>
+              <p className="crud-form__field-note">
+                Se va a enviar un mensaje a los usuarios que ya tenian reserva en esta franja con
+                el motivo del cierre.
+              </p>
               <textarea
                 rows={4}
                 value={reason}
