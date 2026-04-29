@@ -8,6 +8,8 @@ import type {
   DeleteReservationRequestDto,
   DeleteReservationResponseDto,
   ReopenReservationDayResponseDto,
+  ReopenReservationSlotRequestDto,
+  ReopenReservationSlotResponseDto,
   ReservationSlotsByDateResponseDto,
   ReservationsByDateResponseDto,
   UpdateReservationRequestDto,
@@ -19,6 +21,7 @@ import type {
   CreateReservationClientErrorResponse,
   DeleteReservationClientErrorResponse,
   ReopenReservationDayClientErrorResponse,
+  ReopenReservationSlotClientErrorResponse,
   ReservationSlotsByDateQuery,
   ReservationsByDateQuery,
   ReservationsClientErrorResponse,
@@ -189,6 +192,33 @@ export async function closeReservationSlotClient({
   }
 
   return (await response.json()) as CloseReservationSlotResponseDto;
+}
+
+export async function reopenReservationSlotClient({
+  date,
+  fromTime,
+  toTime,
+}: ReopenReservationSlotRequestDto) {
+  const response = await fetch(`/api/reservations/closed-slots/${date}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      fromTime,
+      toTime,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorPayload =
+      (await response.json().catch(() => null)) as ReopenReservationSlotClientErrorResponse | null;
+    const message = getClientErrorMessage(errorPayload?.message);
+
+    throw new Error(message || "No se pudo reabrir la franja horaria.");
+  }
+
+  return (await response.json()) as ReopenReservationSlotResponseDto;
 }
 
 function getClientErrorMessage(message?: string | string[]): string | undefined {

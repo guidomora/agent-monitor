@@ -113,3 +113,17 @@ export type CloseReservationSlotResponseDto = {
   existingReservationsCount: number;
   warning: string | null;
 };
+
+export type ReopenReservationSlotRequestDto = {
+  date: string;
+  fromTime: string;
+  toTime: string;
+};
+
+export type ReopenReservationSlotResponseDto = {
+  date: string;
+  fromTime: string;
+  toTime: string;
+  isClosed: false;
+  reopenedSlotsCount: number;
+};

@@ -9,6 +9,7 @@ import {
   deleteReservationClient,
   getReservationsByDateClient,
   reopenReservationDayClient,
+  reopenReservationSlotClient,
   updateReservationClient,
 } from "@/features/reservations/api/reservations.client";
 import { ChevronLeftIcon } from "@/features/reservations/components/chevron-left-icon";
@@ -20,7 +21,10 @@ import { ReservationEditModal } from "@/features/reservations/components/reserva
 import { ReservationSlotStatusModal } from "@/features/reservations/components/reservation-slot-status-modal";
 import { mapReservationManagement } from "@/features/reservations/mappers/reservations.mapper";
 import type { ReservationClosedDayTarget } from "@/features/reservations/types/closed-day.types";
-import type { ReservationClosedSlotTarget } from "@/features/reservations/types/closed-slot.types";
+import type {
+  ReservationClosedSlotTarget,
+  ReservationSlotStatusMode,
+} from "@/features/reservations/types/closed-slot.types";
 import type { ReservationDeleteTarget } from "@/features/reservations/types/reservation-delete.types";
 import type { ReservationEditTarget } from "@/features/reservations/types/reservation-edit.types";
 import type { ReservationManagementViewModel } from "@/features/reservations/types/reservation.view-model";
@@ -29,6 +33,7 @@ import type {
   CloseReservationSlotRequestDto,
   CreateReservationRequestDto,
   DeleteReservationRequestDto,
+  ReopenReservationSlotRequestDto,
   UpdateReservationRequestDto,
 } from "@/features/reservations/types/reservations.dto";
 
@@ -72,6 +77,7 @@ export function ReservationsManager() {
   const [closeDayErrorMessage, setCloseDayErrorMessage] = useState<string | null>(null);
   const [isUpdatingDayStatus, setIsUpdatingDayStatus] = useState(false);
   const [slotToClose, setSlotToClose] = useState<ReservationClosedSlotTarget | null>(null);
+  const [slotStatusMode, setSlotStatusMode] = useState<ReservationSlotStatusMode>("close");
   const [closeSlotErrorMessage, setCloseSlotErrorMessage] = useState<string | null>(null);
   const [isClosingSlot, setIsClosingSlot] = useState(false);
 
@@ -422,8 +428,33 @@ export function ReservationsManager() {
     }
   }
 
+  async function handleSlotReopen(payload: ReopenReservationSlotRequestDto) {
+    setIsClosingSlot(true);
+    setCloseSlotErrorMessage(null);
+
+    try {
+      const response = await reopenReservationSlotClient(payload);
+
+      await loadReservations(payload.date);
+
+      closeSlotStatusModal();
+      setPendingAction(
+        `Franja reabierta de ${response.fromTime} a ${response.toTime}. ${response.reopenedSlotsCount} bloque${
+          response.reopenedSlotsCount === 1 ? "" : "s"
+        } actualizado${response.reopenedSlotsCount === 1 ? "" : "s"}.`,
+      );
+    } catch (error) {
+      setCloseSlotErrorMessage(
+        error instanceof Error ? error.message : "No se pudo reabrir la franja horaria.",
+      );
+      setIsClosingSlot(false);
+    }
+  }
+
   const slotTimes = reservationsViewModel?.slotTimes ?? [];
+  const reopenSlotTarget = getReopenSlotTarget(reservationsViewModel);
   const canCloseSlots = !isSelectedDateClosed && slotTimes.length > 1;
+  const canReopenSlots = !isSelectedDateClosed && reopenSlotTarget !== null;
 
   return (
     <section className="surface-stack">
@@ -639,6 +670,23 @@ export function ReservationsManager() {
             <div className="schedule-slot-status__actions">
               <button
                 type="button"
+                className="action-button"
+                onClick={() => {
+                  if (!reopenSlotTarget) {
+                    return;
+                  }
+
+                  setPendingAction(null);
+                  setCloseSlotErrorMessage(null);
+                  setSlotStatusMode("reopen");
+                  setSlotToClose(reopenSlotTarget);
+                }}
+                disabled={!canReopenSlots || isLoadingReservations || isClosingSlot}
+              >
+                {isSelectedDateClosed ? "Dia cerrado" : "Reabrir franja"}
+              </button>
+              <button
+                type="button"
                 className="action-button action-button--subtle-danger"
                 onClick={() => {
                   if (!reservationsViewModel) {
@@ -647,6 +695,7 @@ export function ReservationsManager() {
 
                   setPendingAction(null);
                   setCloseSlotErrorMessage(null);
+                  setSlotStatusMode("close");
                   setSlotToClose({
                     date: reservationsViewModel.date,
                     formattedDate: reservationsViewModel.formattedDateLabel,
@@ -902,9 +951,16 @@ export function ReservationsManager() {
         <ReservationSlotStatusModal
           closeErrorMessage={closeSlotErrorMessage}
           isSubmitting={isClosingSlot}
+          mode={slotStatusMode}
           target={slotToClose}
           onClose={closeSlotStatusModal}
-          onSubmit={handleSlotClose}
+          onSubmit={(payload) => {
+            if (slotStatusMode === "reopen") {
+              return handleSlotReopen(payload as ReopenReservationSlotRequestDto);
+            }
+
+            return handleSlotClose(payload as CloseReservationSlotRequestDto);
+          }}
         />
       ) : null}
 
@@ -994,6 +1050,37 @@ function getCreateInitialDate(
   }
 
   return getInitialDate(todayDate, openAvailableDates);
+}
+
+function getReopenSlotTarget(
+  reservationsViewModel: ReservationManagementViewModel | null,
+): ReservationClosedSlotTarget | null {
+  if (!reservationsViewModel || reservationsViewModel.slotTimes.length < 2) {
+    return null;
+  }
+
+  const firstClosedBlock = reservationsViewModel.hourBlocks.find((block) => block.isClosed);
+
+  if (!firstClosedBlock) {
+    return null;
+  }
+
+  const closedTimeIndex = reservationsViewModel.slotTimes.findIndex(
+    (time) => time === firstClosedBlock.hour,
+  );
+  const initialToTime = reservationsViewModel.slotTimes[closedTimeIndex + 1];
+
+  if (closedTimeIndex < 0 || !initialToTime) {
+    return null;
+  }
+
+  return {
+    date: reservationsViewModel.date,
+    formattedDate: reservationsViewModel.formattedDateLabel,
+    availableTimes: reservationsViewModel.slotTimes,
+    initialFromTime: firstClosedBlock.hour,
+    initialToTime,
+  };
 }
 
 function formatCompactDate(value: string) {

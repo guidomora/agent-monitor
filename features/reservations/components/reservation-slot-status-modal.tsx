@@ -3,15 +3,24 @@
 import { useMemo, useState } from "react";
 import { ReservationEditLoader } from "@/features/reservations/components/reservation-edit-loader";
 import { ReservationEditSelect } from "@/features/reservations/components/reservation-edit-select";
-import type { ReservationClosedSlotTarget } from "@/features/reservations/types/closed-slot.types";
-import type { CloseReservationSlotRequestDto } from "@/features/reservations/types/reservations.dto";
+import type {
+  ReservationClosedSlotTarget,
+  ReservationSlotStatusMode,
+} from "@/features/reservations/types/closed-slot.types";
+import type {
+  CloseReservationSlotRequestDto,
+  ReopenReservationSlotRequestDto,
+} from "@/features/reservations/types/reservations.dto";
 
 type ReservationSlotStatusModalProps = {
   closeErrorMessage: string | null;
   isSubmitting: boolean;
+  mode: ReservationSlotStatusMode;
   target: ReservationClosedSlotTarget;
   onClose: () => void;
-  onSubmit: (payload: CloseReservationSlotRequestDto) => Promise<void>;
+  onSubmit: (
+    payload: CloseReservationSlotRequestDto | ReopenReservationSlotRequestDto,
+  ) => Promise<void>;
 };
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -19,16 +28,24 @@ const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 export function ReservationSlotStatusModal({
   closeErrorMessage,
   isSubmitting,
+  mode,
   target,
   onClose,
   onSubmit,
 }: ReservationSlotStatusModalProps) {
-  const [fromTime, setFromTime] = useState(target.availableTimes[0] ?? "");
-  const [toTime, setToTime] = useState(target.availableTimes[1] ?? "");
+  const [fromTime, setFromTime] = useState(
+    target.initialFromTime ?? target.availableTimes[0] ?? "",
+  );
+  const [toTime, setToTime] = useState(
+    target.initialToTime ?? target.availableTimes[1] ?? "",
+  );
   const [reason, setReason] = useState("");
   const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
   const canClose = !isSubmitting;
+  const isReopening = mode === "reopen";
+  const actionLabel = isReopening ? "Reabrir franja" : "Cerrar franja";
+  const submittingLabel = isReopening ? "Reabriendo franja" : "Cerrando franja";
   const toTimeOptions = useMemo(
     () => target.availableTimes.filter((time) => time > fromTime),
     [fromTime, target.availableTimes],
@@ -42,7 +59,7 @@ export function ReservationSlotStatusModal({
       fromTime,
       toTime,
       reason,
-    });
+    }, mode);
 
     if ("error" in payload) {
       setValidationMessage(payload.error);
@@ -75,12 +92,12 @@ export function ReservationSlotStatusModal({
         <div className="dates-modal__header">
           <div>
             <p className="dashboard-eyebrow">Operacion de agenda</p>
-            <h3 id="reservation-slot-status-modal-title">Cerrar franja</h3>
+            <h3 id="reservation-slot-status-modal-title">{actionLabel}</h3>
           </div>
           <button
             type="button"
             className="dates-modal__close"
-            aria-label="Cerrar modal de cierre por franja"
+            aria-label={`Cerrar modal de ${actionLabel.toLowerCase()}`}
             disabled={!canClose}
             onClick={onClose}
           >
@@ -90,9 +107,11 @@ export function ReservationSlotStatusModal({
 
         <div className="reservation-delete-modal__summary reservation-day-status-modal__summary">
           <p>
-            Vas a cerrar una franja puntual dentro de <strong>{target.formattedDate}</strong>.
-            El horario final es exclusivo y el sistema puede consolidar el rango si toca otro ya
-            cerrado.
+            {isReopening ? "Vas a reabrir" : "Vas a cerrar"} una franja puntual dentro de{" "}
+            <strong>{target.formattedDate}</strong>. El horario final es exclusivo
+            {isReopening
+              ? " y solo se quitara el cierre parcial dentro del rango elegido."
+              : " y el sistema puede consolidar el rango si toca otro ya cerrado."}
           </p>
           <div className="reservation-day-status-modal__stats">
             <div>
@@ -143,21 +162,23 @@ export function ReservationSlotStatusModal({
             </label>
           </div>
 
-          <div className="crud-form__row crud-form__row--stacked">
-            <label>
-              <span>Motivo</span>
-              <p className="crud-form__field-note">
-                Se va a enviar un mensaje a los usuarios que ya tenian reserva en esta franja con
-                el motivo del cierre.
-              </p>
-              <textarea
-                rows={4}
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-                placeholder="Ej. Evento privado"
-              />
-            </label>
-          </div>
+          {!isReopening ? (
+            <div className="crud-form__row crud-form__row--stacked">
+              <label>
+                <span>Motivo</span>
+                <p className="crud-form__field-note">
+                  Se va a enviar un mensaje a los usuarios que ya tenian reserva en esta franja con
+                  el motivo del cierre.
+                </p>
+                <textarea
+                  rows={4}
+                  value={reason}
+                  onChange={(event) => setReason(event.target.value)}
+                  placeholder="Ej. Evento privado"
+                />
+              </label>
+            </div>
+          ) : null}
 
           {validationMessage || closeErrorMessage ? (
             <div className="management-feedback management-feedback--danger" role="alert">
@@ -177,10 +198,12 @@ export function ReservationSlotStatusModal({
               </button>
               <button
                 type="submit"
-                className="action-button action-button--subtle-danger reservation-edit-modal__submit"
+                className={`action-button reservation-edit-modal__submit${
+                  isReopening ? "" : " action-button--subtle-danger"
+                }`}
                 disabled={isSubmitting || target.availableTimes.length < 2}
               >
-                {isSubmitting ? "Cerrando franja" : "Cerrar franja"}
+                {isSubmitting ? submittingLabel : actionLabel}
               </button>
             </div>
           </div>
@@ -199,7 +222,8 @@ export function ReservationSlotStatusModal({
 
 function createCloseSlotPayload(
   payload: CloseReservationSlotRequestDto,
-): CloseReservationSlotRequestDto | { error: string } {
+  mode: ReservationSlotStatusMode,
+): CloseReservationSlotRequestDto | ReopenReservationSlotRequestDto | { error: string } {
   const trimmedDate = payload.date.trim();
   const trimmedFromTime = payload.fromTime.trim();
   const trimmedToTime = payload.toTime.trim();
@@ -215,6 +239,14 @@ function createCloseSlotPayload(
 
   if (trimmedFromTime >= trimmedToTime) {
     return { error: "La hora de inicio debe ser menor que la de fin." };
+  }
+
+  if (mode === "reopen") {
+    return {
+      date: trimmedDate,
+      fromTime: trimmedFromTime,
+      toTime: trimmedToTime,
+    };
   }
 
   if (trimmedReason.length === 0) {
