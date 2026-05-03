@@ -72,6 +72,10 @@ export function ReservationDayStatusModal({
             </div>
           </div>
           <p>
+            <strong>Importante:</strong> si hay reservas activas, al confirmar el cierre
+            se va a notificar a los clientes que tenian reserva para ese dia.
+          </p>
+          <p>
             {hasReservations
               ? "El cierre no elimina las reservas existentes. Van a seguir activas y deberan gestionarse manualmente."
               : "No hay reservas cargadas para la fecha seleccionada, asi que el cierre no deberia requerir seguimiento manual."}
