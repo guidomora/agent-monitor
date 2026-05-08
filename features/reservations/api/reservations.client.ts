@@ -1,6 +1,7 @@
 import type {
   CloseReservationDayRequestDto,
   CloseReservationDayResponseDto,
+  ClosureOperationFailuresResponseDto,
   CloseReservationSlotRequestDto,
   CloseReservationSlotResponseDto,
   CreateReservationRequestDto,
@@ -17,6 +18,7 @@ import type {
 } from "@/features/reservations/types/reservations.dto";
 import type {
   CloseReservationDayClientErrorResponse,
+  ClosureOperationFailuresClientErrorResponse,
   CloseReservationSlotClientErrorResponse,
   CreateReservationClientErrorResponse,
   DeleteReservationClientErrorResponse,
@@ -219,6 +221,31 @@ export async function reopenReservationSlotClient({
   }
 
   return (await response.json()) as ReopenReservationSlotResponseDto;
+}
+
+export async function getClosureOperationFailuresClient(
+  operationId: string,
+  signal?: AbortSignal,
+) {
+  const response = await fetch(
+    `/api/reservations/closure-operations/${encodeURIComponent(operationId)}/failures`,
+    {
+      cache: "no-store",
+      signal,
+    },
+  );
+
+  if (!response.ok) {
+    const errorPayload =
+      (await response.json().catch(() => null)) as
+        | ClosureOperationFailuresClientErrorResponse
+        | null;
+    const message = getClientErrorMessage(errorPayload?.message);
+
+    throw new Error(message || "No se pudo consultar el estado de las notificaciones.");
+  }
+
+  return (await response.json()) as ClosureOperationFailuresResponseDto;
 }
 
 function getClientErrorMessage(message?: string | string[]): string | undefined {
