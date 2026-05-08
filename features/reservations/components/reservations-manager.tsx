@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { getAvailableReservationDatesClient } from "@/features/reservations/api/available-dates.client";
 import {
   closeReservationDayClient,
   closeReservationSlotClient,
   createReservationClient,
   deleteReservationClient,
+  getClosureOperationFailuresClient,
   getReservationsByDateClient,
   reopenReservationDayClient,
   reopenReservationSlotClient,
@@ -14,6 +15,7 @@ import {
 } from "@/features/reservations/api/reservations.client";
 import { ChevronLeftIcon } from "@/features/reservations/components/chevron-left-icon";
 import { ChevronRightIcon } from "@/features/reservations/components/chevron-right-icon";
+import { ClosureNotificationFailureToast } from "@/features/reservations/components/closure-notification-failure-toast";
 import { ReservationCreateModal } from "@/features/reservations/components/reservation-create-modal";
 import { ReservationDayStatusModal } from "@/features/reservations/components/reservation-day-status-modal";
 import { ReservationDeleteModal } from "@/features/reservations/components/reservation-delete-modal";
@@ -33,9 +35,13 @@ import type {
   CloseReservationSlotRequestDto,
   CreateReservationRequestDto,
   DeleteReservationRequestDto,
+  ClosureFailedNotificationDto,
   ReopenReservationSlotRequestDto,
   UpdateReservationRequestDto,
 } from "@/features/reservations/types/reservations.dto";
+
+const closureNotificationPollingIntervalMs = 2000;
+const closureNotificationPollingTimeoutMs = 20000;
 
 const shortDateFormatter = new Intl.DateTimeFormat("es-AR", {
   day: "2-digit",
@@ -50,6 +56,7 @@ const fullDateFormatter = new Intl.DateTimeFormat("es-AR", {
 });
 
 export function ReservationsManager() {
+  const closureNotificationPollingRef = useRef<ClosureNotificationPollingHandle | null>(null);
   const [todayDate] = useState(() => getTodayDate());
   const [availableDates, setAvailableDates] = useState<AvailableReservationDateDto[]>([]);
   const [isLoadingDates, setIsLoadingDates] = useState(true);
@@ -80,6 +87,9 @@ export function ReservationsManager() {
   const [slotStatusMode, setSlotStatusMode] = useState<ReservationSlotStatusMode>("close");
   const [closeSlotErrorMessage, setCloseSlotErrorMessage] = useState<string | null>(null);
   const [isClosingSlot, setIsClosingSlot] = useState(false);
+  const [failedClosureNotifications, setFailedClosureNotifications] = useState<
+    ClosureFailedNotificationDto[]
+  >([]);
 
   const availableDateValues = availableDates.map((date) => date.date);
   const openAvailableDates = availableDates.filter((date) => !date.isClosed);
@@ -251,6 +261,12 @@ export function ReservationsManager() {
     reservationToEdit,
   ]);
 
+  useEffect(() => {
+    return () => {
+      stopClosureNotificationPolling(closureNotificationPollingRef);
+    };
+  }, []);
+
   const selectedDateIndex = availableDateValues.findIndex((date) => date === selectedDate);
   const previousDate = availableDateValues[selectedDateIndex - 1] ?? null;
   const nextDate = availableDateValues[selectedDateIndex + 1] ?? null;
@@ -375,6 +391,7 @@ export function ReservationsManager() {
             ? `Dia cerrado. Quedaron ${response.existingReservationsCount} reservas activas para revisar manualmente.`
             : "Dia cerrado correctamente."),
       );
+      startClosureNotificationFailurePolling(response.closureOperationId);
     } catch (error) {
       setCloseDayErrorMessage(
         error instanceof Error ? error.message : "No se pudo cerrar la fecha.",
@@ -420,6 +437,7 @@ export function ReservationsManager() {
             response.reason ? ` (${response.reason})` : ""
           }.`,
       );
+      startClosureNotificationFailurePolling(response.closureOperationId);
     } catch (error) {
       setCloseSlotErrorMessage(
         error instanceof Error ? error.message : "No se pudo cerrar la franja horaria.",
@@ -456,8 +474,81 @@ export function ReservationsManager() {
   const canCloseSlots = !isSelectedDateClosed && slotTimes.length > 1;
   const canReopenSlots = !isSelectedDateClosed && reopenSlotTarget !== null;
 
+  function startClosureNotificationFailurePolling(operationId: string | null) {
+    stopClosureNotificationPolling(closureNotificationPollingRef);
+    setFailedClosureNotifications([]);
+
+    if (!operationId) {
+      return;
+    }
+
+    const pollingOperationId = operationId;
+    const abortController = new AbortController();
+    const deadline = Date.now() + closureNotificationPollingTimeoutMs;
+
+    closureNotificationPollingRef.current = {
+      abortController,
+      timeoutId: null,
+    };
+
+    async function pollFailures() {
+      if (Date.now() > deadline || abortController.signal.aborted) {
+        stopClosureNotificationPolling(closureNotificationPollingRef);
+        return;
+      }
+
+      try {
+        const response = await getClosureOperationFailuresClient(
+          pollingOperationId,
+          abortController.signal,
+        );
+
+        if (
+          response.isCompleted &&
+          response.hasFailures &&
+          response.failedNotifications.length > 0
+        ) {
+          setFailedClosureNotifications(response.failedNotifications);
+          stopClosureNotificationPolling(closureNotificationPollingRef);
+          return;
+        }
+      } catch {
+        if (abortController.signal.aborted) {
+          return;
+        }
+      }
+
+      if (Date.now() > deadline || abortController.signal.aborted) {
+        stopClosureNotificationPolling(closureNotificationPollingRef);
+        return;
+      }
+
+      const timeoutId = window.setTimeout(
+        pollFailures,
+        closureNotificationPollingIntervalMs,
+      );
+
+      if (closureNotificationPollingRef.current) {
+        closureNotificationPollingRef.current.timeoutId = timeoutId;
+      }
+    }
+
+    void pollFailures();
+  }
+
   return (
     <section className="surface-stack">
+      {failedClosureNotifications.length > 0 ? (
+        <ClosureNotificationFailureToast
+          failedNotifications={failedClosureNotifications}
+          onClose={(failedNotificationIndex) => {
+            setFailedClosureNotifications((currentNotifications) =>
+              currentNotifications.filter((_, index) => index !== failedNotificationIndex),
+            );
+          }}
+        />
+      ) : null}
+
       <header className="hero-card hero-card--management">
         <div>
           <p className="dashboard-eyebrow">Gestion de reservas</p>
@@ -1081,6 +1172,29 @@ function getReopenSlotTarget(
     initialFromTime: firstClosedBlock.hour,
     initialToTime,
   };
+}
+
+type ClosureNotificationPollingHandle = {
+  abortController: AbortController;
+  timeoutId: number | null;
+};
+
+function stopClosureNotificationPolling(
+  pollingRef: MutableRefObject<ClosureNotificationPollingHandle | null>,
+) {
+  const currentPolling = pollingRef.current;
+
+  if (!currentPolling) {
+    return;
+  }
+
+  currentPolling.abortController.abort();
+
+  if (currentPolling.timeoutId !== null) {
+    window.clearTimeout(currentPolling.timeoutId);
+  }
+
+  pollingRef.current = null;
 }
 
 function formatCompactDate(value: string) {
