@@ -4,6 +4,7 @@ import type {
   AvailableReservationDatesResponseDto,
   CloseReservationDayRequestDto,
   CloseReservationDayResponseDto,
+  ClosureOperationFailuresResponseDto,
   CloseReservationSlotRequestDto,
   CloseReservationSlotResponseDto,
   CreateReservationRequestDto,
@@ -200,6 +201,21 @@ export async function reopenReservationSlot({
     return response.data;
   } catch (error) {
     throw createReservationServiceError(error, "No se pudo reabrir la franja horaria.");
+  }
+}
+
+export async function getClosureOperationFailures(operationId: string) {
+  try {
+    const response = await backendApi.get<ClosureOperationFailuresResponseDto>(
+      `bot/reservations/closure-operations/${operationId}/failures`,
+    );
+
+    return response.data;
+  } catch (error) {
+    throw createReservationServiceError(
+      error,
+      "No se pudo consultar el estado de las notificaciones.",
+    );
   }
 }
 

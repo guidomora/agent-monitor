@@ -89,6 +89,8 @@ export type CloseReservationDayResponseDto = {
   isClosed: true;
   reason?: string;
   existingReservationsCount: number;
+  notificationsQueuedCount: number;
+  closureOperationId: string | null;
   warning?: string;
 };
 
@@ -109,8 +111,10 @@ export type CloseReservationSlotResponseDto = {
   fromTime: string;
   toTime: string;
   isClosed: true;
-  reason: string;
+  reason?: string;
   existingReservationsCount: number;
+  notificationsQueuedCount: number;
+  closureOperationId: string | null;
   warning: string | null;
 };
 
@@ -127,3 +131,20 @@ export type ReopenReservationSlotResponseDto = {
   isClosed: false;
   reopenedSlotsCount: number;
 };
+
+export type ClosureFailedNotificationDto = {
+  name: string;
+  phone: string;
+  date: string;
+  time: string;
+};
+
+export type ClosureOperationFailuresResponseDto =
+  | {
+      isCompleted: false;
+    }
+  | {
+      isCompleted: true;
+      hasFailures: boolean;
+      failedNotifications: ClosureFailedNotificationDto[];
+    };
