@@ -19,12 +19,20 @@ El polling debe estar **activo solo cuando el usuario está en la sección de me
 3. Los route handlers delegan en `features/whatsapp/services/conversations.service.ts`.
 4. `conversations.service.ts` consulta Twilio directamente (`messages.list`) y mapea a modelos UI.
 
-### Problema actual
+### Problema original
 
 - El listado de conversaciones se carga al montar la vista.
 - Los mensajes de un chat se cargan al seleccionar conversación.
 - No hay auto-actualización periódica.
 - El usuario depende del botón “Recargar” para ver nueva actividad.
+
+### Estado implementado
+
+- `WhatsAppViewer` refresca conversaciones automáticamente cada 10 segundos mientras está montado.
+- Si hay una conversación seleccionada, también refresca sus mensajes en el mismo ciclo.
+- El polling usa un loop con `setTimeout` después de cada ciclo para evitar requests superpuestas.
+- Los errores de refresh no vacían los datos ya cargados.
+- El autoscroll se mantiene solo al cambiar de conversación o cuando el usuario ya está cerca del final del chat.
 
 ---
 
@@ -54,7 +62,7 @@ El polling debe estar **activo solo cuando el usuario está en la sección de me
    - Mensajes de la conversación activa (si existe).
 3. Al salir de `/whatsapp`, detener polling.
 4. No romper la búsqueda local ni la selección de conversación.
-5. Seguir permitiendo “Recargar” manual (opcional mantener como fallback UX).
+5. Seguir permitiendo “Recargar” manual como fallback UX.
 
 ---
 
@@ -84,15 +92,16 @@ Implementar polling dentro de `features/whatsapp/components/whatsapp-viewer.tsx`
    - `isRefreshingConversations` (polling/manual refresh)
    - `isLoadingMessagesInitial`
    - `isRefreshingMessages`
-3. Crear `useEffect` de polling con `setInterval`.
+3. Crear `useEffect` de polling con un loop de `setTimeout`.
 4. En cada tick:
    - refrescar conversaciones.
    - si hay `selectedConversationId`, refrescar mensajes de ese chat.
 5. Evitar carrera de datos con:
-   - `AbortController` por request, o
-   - guard de “última ejecución válida”.
+   - `AbortController` por ciclo de polling.
+   - `selectedConversationIdRef` para evitar que una respuesta vieja pise el chat activo.
+   - programar el siguiente tick solo cuando el tick actual termina.
 6. Cleanup en unmount:
-   - `clearInterval`
+   - `clearTimeout`
    - `abort()` de requests en curso.
 
 ### Intervalo sugerido
@@ -108,10 +117,10 @@ Implementar polling dentro de `features/whatsapp/components/whatsapp-viewer.tsx`
    - Mantener skeletons actuales.
 2. Durante polling:
    - No resetear pantalla a estado “loading completo”.
-   - Mostrar, si se desea, estado sutil “actualizando…” (opcional).
+   - Mostrar estado sutil “actualizando…” cuando corresponde.
 3. Errores intermitentes de polling:
    - No vaciar datos ya cargados por defecto.
-   - Reportar error no bloqueante (ej. mensaje breve o log).
+   - Reportar error no bloqueante con un mensaje breve.
 4. Recargar manual:
    - Puede forzar refresh inmediato y mantener semántica existente.
 
@@ -123,11 +132,13 @@ Implementar polling dentro de `features/whatsapp/components/whatsapp-viewer.tsx`
    - Mensajes vienen de Twilio vía API interna Next, no de backend de reservas.
 2. **Costo de polling**
    - `listWhatsappMessages` trae lote y luego filtra/mapea; polling agresivo podría aumentar costo.
+   - Con una conversación seleccionada, cada ciclo puede disparar una consulta para conversaciones y otra para mensajes.
+   - El intervalo de 10s se acepta como solución incremental; para mayor volumen conviene optimizar con caché, cursores o sincronización backend.
 3. **Escalabilidad**
    - Para alto volumen futuro, considerar cursores/incremental fetch por fecha/SID.
 4. **Orden y autoscroll**
    - Actualmente se hace autoscroll en cada cambio de `messages`; con polling podría mover el scroll siempre al fondo.
-   - Evaluar si limitar autoscroll solo cuando el usuario ya está cerca del final.
+   - La implementación limita el autoscroll al cambio de conversación o a casos donde el usuario ya está cerca del final.
 5. **Condiciones de carrera**
    - Si cambia conversación entre ticks, asegurar que respuesta vieja no pise estado nuevo.
 
@@ -140,7 +151,7 @@ Implementar polling dentro de `features/whatsapp/components/whatsapp-viewer.tsx`
 2. **Refactor mínimo interno**
    - Extraer helpers async reutilizables para conversaciones y mensajes.
 3. **Incorporar polling**
-   - Añadir `useEffect` con `setInterval` y cleanup.
+   - Añadir `useEffect` con loop de `setTimeout` y cleanup.
 4. **Evitar sobreescrituras inválidas**
    - Asegurar control de abort/cancel por tick y por conversación activa.
 5. **Ajustar indicadores de carga**
@@ -174,6 +185,7 @@ Implementar polling dentro de `features/whatsapp/components/whatsapp-viewer.tsx`
 4. No se pierde funcionalidad existente de búsqueda, selección y recarga manual.
 5. No hay errores de React por updates sobre componente desmontado.
 6. La UI no entra en estado de skeleton completo en cada ciclo de polling.
+7. El polling no fuerza scroll al final si el usuario está leyendo mensajes anteriores.
 
 ---
 
@@ -195,7 +207,7 @@ Implementar polling dentro de `features/whatsapp/components/whatsapp-viewer.tsx`
 ### Técnicas (si aplica)
 
 - Unit test de helpers de carga (mock fetch).
-- Test de hook/componente con fake timers para verificar `setInterval/clearInterval`.
+- Test de hook/componente con fake timers para verificar programación/cancelación del polling.
 
 ---
 
@@ -210,10 +222,10 @@ Implementar polling dentro de `features/whatsapp/components/whatsapp-viewer.tsx`
 
 ## Checklist de implementación
 
-- [ ] Crear constante `POLLING_INTERVAL_MS`.
-- [ ] Extraer funciones reutilizables de fetch para conversaciones/mensajes.
-- [ ] Incorporar `useEffect` de polling con cleanup.
-- [ ] Evitar race conditions al cambiar conversación.
-- [ ] Mantener estados UX actuales sin flicker.
-- [ ] Verificar botón recargar y búsqueda.
-- [ ] Validar en navegación que polling se detiene.
+- [x] Crear constante `POLLING_INTERVAL_MS`.
+- [x] Extraer funciones reutilizables de fetch para conversaciones/mensajes.
+- [x] Incorporar `useEffect` de polling con cleanup.
+- [x] Evitar race conditions al cambiar conversación.
+- [x] Mantener estados UX actuales sin flicker.
+- [x] Verificar botón recargar y búsqueda.
+- [x] Validar en navegación que polling se detiene.

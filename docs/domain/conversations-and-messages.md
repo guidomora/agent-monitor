@@ -24,6 +24,9 @@ Read this before changing the WhatsApp viewer, Twilio message mapping, conversat
 - Messages inside a selected conversation are sorted by timestamp ascending.
 - Multimedia-only messages use a media placeholder in previews.
 - Empty messages use an empty-content placeholder.
+- The WhatsApp viewer polls for fresh conversation summaries while it is mounted.
+- When a conversation is selected, the viewer also polls for that conversation's messages.
+- Polling refresh errors do not clear the last successful conversation or message state.
 
 ## Dashboard scope
 

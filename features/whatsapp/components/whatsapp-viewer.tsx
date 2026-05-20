@@ -1,6 +1,14 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useRef, useState, startTransition } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  startTransition,
+} from "react";
 import type {
   ApiErrorResponse,
   ConversationsResponse,
@@ -13,6 +21,9 @@ const dateFormatter = new Intl.DateTimeFormat("es-AR", {
   dateStyle: "short",
   timeStyle: "short",
 });
+
+const POLLING_INTERVAL_MS = 10_000;
+const SCROLL_BOTTOM_THRESHOLD_PX = 96;
 
 function formatTimestamp(value: string | null) {
   if (!value) {
@@ -57,17 +68,27 @@ type WhatsAppViewerProps = {
   embedded?: boolean;
 };
 
+type LoadOptions = {
+  mode?: "initial" | "refresh";
+  signal?: AbortSignal;
+};
+
 export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isLoadingConversationsInitial, setIsLoadingConversationsInitial] = useState(true);
+  const [isRefreshingConversations, setIsRefreshingConversations] = useState(false);
   const [conversationsError, setConversationsError] = useState<string | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isLoadingMessagesInitial, setIsLoadingMessagesInitial] = useState(false);
+  const [isRefreshingMessages, setIsRefreshingMessages] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const messageViewportRef = useRef<HTMLDivElement | null>(null);
+  const selectedConversationIdRef = useRef<string | null>(null);
+  const lastRenderedConversationIdRef = useRef<string | null>(null);
+  const shouldStickToBottomRef = useRef(true);
 
   const selectedConversation =
     conversations.find((conversation) => conversation.id === selectedConversationId) ?? null;
@@ -89,83 +110,196 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
     });
   }, [conversations, deferredSearch]);
 
-  useEffect(() => {
-    const controller = new AbortController();
+  const loadConversations = useCallback(async ({ mode = "refresh", signal }: LoadOptions = {}) => {
+    const isInitial = mode === "initial";
 
-    async function loadConversations() {
-      setIsLoadingConversations(true);
+    if (isInitial) {
+      setIsLoadingConversationsInitial(true);
+    } else {
+      setIsRefreshingConversations(true);
+    }
+
+    try {
+      const payload = await readJson<ConversationsResponse>("/api/conversations", {
+        signal,
+      });
+
+      setConversations(payload.conversations);
       setConversationsError(null);
-
-      try {
-        const payload = await readJson<ConversationsResponse>("/api/conversations", {
-          signal: controller.signal,
-        });
-
-        setConversations(payload.conversations);
-      } catch (error) {
-        if (!isAbortError(error)) {
-          setConversationsError(
-            error instanceof Error ? error.message : "No se pudo cargar el listado.",
-          );
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsLoadingConversations(false);
+    } catch (error) {
+      if (!isAbortError(error)) {
+        setConversationsError(
+          error instanceof Error ? error.message : "No se pudo cargar el listado.",
+        );
+      }
+    } finally {
+      if (!signal?.aborted) {
+        if (isInitial) {
+          setIsLoadingConversationsInitial(false);
+        } else {
+          setIsRefreshingConversations(false);
         }
       }
     }
-
-    void loadConversations();
-
-    return () => controller.abort();
   }, []);
 
-  useEffect(() => {
-    if (!selectedConversationId) {
-      setMessages([]);
-      setMessagesError(null);
-      setIsLoadingMessages(false);
-      return;
-    }
+  const loadMessages = useCallback(
+    async (conversationId: string, { mode = "refresh", signal }: LoadOptions = {}) => {
+      const isInitial = mode === "initial";
 
-    const controller = new AbortController();
-    const conversationId = selectedConversationId;
-
-    async function loadMessages() {
-      setIsLoadingMessages(true);
-      setMessagesError(null);
+      if (isInitial) {
+        setIsLoadingMessagesInitial(true);
+      } else {
+        setIsRefreshingMessages(true);
+      }
 
       try {
         const payload = await readJson<MessagesResponse>(
           `/api/conversations/${encodeURIComponent(conversationId)}`,
-          { signal: controller.signal },
+          { signal },
         );
 
-        setMessages(payload.messages);
+        if (selectedConversationIdRef.current === conversationId) {
+          setMessages(payload.messages);
+          setMessagesError(null);
+        }
       } catch (error) {
-        if (!isAbortError(error)) {
+        if (!isAbortError(error) && selectedConversationIdRef.current === conversationId) {
           setMessagesError(
             error instanceof Error ? error.message : "No se pudo cargar la conversacion.",
           );
-          setMessages([]);
+
+          if (isInitial) {
+            setMessages([]);
+          }
         }
       } finally {
-        if (!controller.signal.aborted) {
-          setIsLoadingMessages(false);
+        if (!signal?.aborted) {
+          if (isInitial && selectedConversationIdRef.current === conversationId) {
+            setIsLoadingMessagesInitial(false);
+          }
+
+          if (!isInitial) {
+            setIsRefreshingMessages(false);
+          }
         }
       }
-    }
-
-    void loadMessages();
-
-    return () => controller.abort();
-  }, [selectedConversationId]);
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (messageViewportRef.current) {
-      messageViewportRef.current.scrollTop = messageViewportRef.current.scrollHeight;
+    const controller = new AbortController();
+
+    void loadConversations({ mode: "initial", signal: controller.signal });
+
+    return () => controller.abort();
+  }, [loadConversations]);
+
+  useEffect(() => {
+    selectedConversationIdRef.current = selectedConversationId;
+
+    if (!selectedConversationId) {
+      setMessages([]);
+      setMessagesError(null);
+      setIsLoadingMessagesInitial(false);
+      setIsRefreshingMessages(false);
+      return;
     }
-  }, [messages]);
+
+    shouldStickToBottomRef.current = true;
+
+    const controller = new AbortController();
+
+    void loadMessages(selectedConversationId, {
+      mode: "initial",
+      signal: controller.signal,
+    });
+
+    return () => controller.abort();
+  }, [loadMessages, selectedConversationId]);
+
+  useEffect(() => {
+    let isStopped = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let controller: AbortController | null = null;
+
+    const scheduleNextTick = () => {
+      timeoutId = setTimeout(() => {
+        void runPollingTick();
+      }, POLLING_INTERVAL_MS);
+    };
+
+    const runPollingTick = async () => {
+      if (isStopped) {
+        return;
+      }
+
+      controller = new AbortController();
+      const activeConversationId = selectedConversationIdRef.current;
+
+      try {
+        await Promise.all([
+          loadConversations({ mode: "refresh", signal: controller.signal }),
+          activeConversationId
+            ? loadMessages(activeConversationId, {
+                mode: "refresh",
+                signal: controller.signal,
+              })
+            : Promise.resolve(),
+        ]);
+      } finally {
+        controller = null;
+
+        if (!isStopped) {
+          scheduleNextTick();
+        }
+      }
+    };
+
+    scheduleNextTick();
+
+    return () => {
+      isStopped = true;
+
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      controller?.abort();
+    };
+  }, [loadConversations, loadMessages]);
+
+  useEffect(() => {
+    const viewport = messageViewportRef.current;
+
+    if (!viewport) {
+      return;
+    }
+
+    const conversationChanged =
+      lastRenderedConversationIdRef.current !== selectedConversationId;
+
+    if (conversationChanged || shouldStickToBottomRef.current) {
+      viewport.scrollTop = viewport.scrollHeight;
+      shouldStickToBottomRef.current = true;
+    }
+
+    lastRenderedConversationIdRef.current = selectedConversationId;
+  }, [messages, selectedConversationId]);
+
+  function handleMessagesScroll() {
+    const viewport = messageViewportRef.current;
+
+    if (!viewport) {
+      return;
+    }
+
+    const distanceFromBottom =
+      viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+
+    shouldStickToBottomRef.current = distanceFromBottom <= SCROLL_BOTTOM_THRESHOLD_PX;
+  }
 
   return (
     <div className={embedded ? "app-shell app-shell--embedded" : "app-shell"}>
@@ -198,26 +332,11 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                 onClick={() => {
                   setSelectedConversationId(null);
                   setSearch("");
-                  setIsLoadingConversations(true);
-                  setConversationsError(null);
-                  void readJson<ConversationsResponse>("/api/conversations")
-                    .then((payload) => {
-                      setConversations(payload.conversations);
-                    })
-                    .catch((error: unknown) => {
-                      setConversationsError(
-                        error instanceof Error
-                          ? error.message
-                          : "No se pudo actualizar el listado.",
-                      );
-                    })
-                    .finally(() => {
-                      setIsLoadingConversations(false);
-                    });
+                  void loadConversations({ mode: "initial" });
                 }}
                 className="rounded-full border border-border bg-panel-strong px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted transition hover:border-accent/30 hover:text-accent"
               >
-                Recargar
+                {isRefreshingConversations ? "Actualizando" : "Recargar"}
               </button>
             </div>
             <label className="mt-4 block">
@@ -232,7 +351,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
           </div>
 
           <div className="scrollbar-thin flex-1 overflow-y-auto px-3 py-3 lg:min-h-0">
-            {isLoadingConversations ? (
+            {isLoadingConversationsInitial ? (
               <div className="space-y-3">
                 {Array.from({ length: 7 }).map((_, index) => (
                   <div
@@ -245,7 +364,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                   </div>
                 ))}
               </div>
-            ) : conversationsError ? (
+            ) : conversationsError && conversations.length === 0 ? (
               <div className="rounded-3xl border border-red-500/30 bg-red-950/40 px-4 py-5 text-sm text-red-200">
                 <p className="font-medium">No se pudo cargar la lista.</p>
                 <p className="mt-2 text-red-200/85">{conversationsError}</p>
@@ -255,45 +374,52 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                 No hay conversaciones para mostrar con el filtro actual.
               </div>
             ) : (
-              <ul className="space-y-2">
-                {filteredConversations.map((conversation) => {
-                  const isActive = conversation.id === selectedConversationId;
+              <div className="space-y-3">
+                {conversationsError ? (
+                  <div className="rounded-2xl border border-red-500/25 bg-red-950/30 px-3 py-3 text-xs text-red-200">
+                    No se pudo actualizar la lista. Se muestran los ultimos datos cargados.
+                  </div>
+                ) : null}
+                <ul className="space-y-2">
+                  {filteredConversations.map((conversation) => {
+                    const isActive = conversation.id === selectedConversationId;
 
-                  return (
-                    <li key={conversation.id}>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          startTransition(() => {
-                            setSelectedConversationId(conversation.id);
-                          })
-                        }
-                        className={`w-full rounded-3xl border px-4 py-4 text-left transition ${
-                          isActive
-                            ? "border-accent/30 bg-accent-soft"
-                            : "border-border/70 bg-panel-strong hover:border-accent/20 hover:bg-white/4"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="text-sm font-semibold tracking-[-0.02em]">
-                            {conversation.phoneNumber}
+                    return (
+                      <li key={conversation.id}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            startTransition(() => {
+                              setSelectedConversationId(conversation.id);
+                            })
+                          }
+                          className={`w-full rounded-3xl border px-4 py-4 text-left transition ${
+                            isActive
+                              ? "border-accent/30 bg-accent-soft"
+                              : "border-border/70 bg-panel-strong hover:border-accent/20 hover:bg-white/4"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-sm font-semibold tracking-[-0.02em]">
+                              {conversation.phoneNumber}
+                            </p>
+                            <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-muted">
+                              {formatTimestamp(conversation.lastMessageAt)}
+                            </p>
+                          </div>
+                          <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
+                            {buildPreview(conversation)}
                           </p>
-                          <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-muted">
-                            {formatTimestamp(conversation.lastMessageAt)}
+                          <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.15em] text-muted">
+                            {conversation.messageCount} mensaje
+                            {conversation.messageCount === 1 ? "" : "s"}
                           </p>
-                        </div>
-                        <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">
-                          {buildPreview(conversation)}
-                        </p>
-                        <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.15em] text-muted">
-                          {conversation.messageCount} mensaje
-                          {conversation.messageCount === 1 ? "" : "s"}
-                        </p>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             )}
           </div>
         </aside>
@@ -315,7 +441,9 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                     Ultima actividad
                   </p>
                   <p className="mt-2 text-sm text-muted">
-                    {formatTimestamp(selectedConversation.lastMessageAt)}
+                    {isRefreshingMessages
+                      ? "Actualizando..."
+                      : formatTimestamp(selectedConversation.lastMessageAt)}
                   </p>
                 </div>
               </div>
@@ -346,7 +474,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                 </p>
               </div>
             </div>
-          ) : isLoadingMessages ? (
+          ) : isLoadingMessagesInitial ? (
             <div className="flex-1 px-5 py-5 sm:px-7 lg:min-h-0">
               <div className="space-y-4">
                 {Array.from({ length: 6 }).map((_, index) => (
@@ -362,7 +490,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                 ))}
               </div>
             </div>
-          ) : messagesError ? (
+          ) : messagesError && messages.length === 0 ? (
             <div className="flex flex-1 items-center justify-center px-6 py-10">
               <div className="max-w-md rounded-[28px] border border-red-500/30 bg-red-950/40 px-6 py-6 text-sm text-red-200">
                 <p className="font-medium">No se pudo cargar la conversacion.</p>
@@ -378,9 +506,15 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
           ) : (
             <div
               ref={messageViewportRef}
+              onScroll={handleMessagesScroll}
               className="scrollbar-thin flex-1 overflow-y-auto px-5 py-5 sm:px-7 lg:min-h-0"
             >
               <div className="space-y-4">
+                {messagesError ? (
+                  <div className="mx-auto max-w-md rounded-2xl border border-red-500/25 bg-red-950/30 px-4 py-3 text-center text-xs text-red-200">
+                    No se pudo actualizar la conversacion. Se muestran los ultimos mensajes cargados.
+                  </div>
+                ) : null}
                 {messages.map((message) => {
                   const isOutgoing = message.direction === "outbound";
 
