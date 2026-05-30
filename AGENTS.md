@@ -341,3 +341,9 @@ When completing a task in this repo:
 3. Implement the smallest correct solution.
 4. Summarize what changed in a concise way.
 5. Mention any assumptions or follow-up recommendations only if they are relevant.
+
+<!-- SPECKIT START -->
+For additional context about technologies to be used, project structure,
+shell commands, and other important information, read the current plan:
+`specs/001-mobile-dashboard-views/plan.md`
+<!-- SPECKIT END -->
