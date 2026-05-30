@@ -312,18 +312,20 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
         </header>
       ) : null}
       <div
-        className={`flex w-full flex-col overflow-hidden rounded-[28px] border border-border/70 bg-panel text-foreground panel-shadow lg:grid lg:grid-cols-[340px_minmax(0,1fr)] ${
+        className={`whatsapp-shell ${
+          selectedConversation ? "whatsapp-shell--conversation" : "whatsapp-shell--list"
+        } flex w-full flex-col overflow-hidden rounded-[28px] border border-border/70 bg-panel text-foreground panel-shadow lg:grid lg:grid-cols-[340px_minmax(0,1fr)] ${
           embedded
             ? "min-h-[720px] lg:h-[calc(100dvh-132px)] lg:min-h-0"
             : "min-h-[calc(100dvh-48px)] lg:h-[calc(100dvh-48px)] lg:min-h-0"
         }`}
       >
-        <aside className="flex min-h-[320px] flex-col border-b border-border/80 bg-background-strong/70 lg:min-h-0 lg:h-full lg:border-r lg:border-b-0">
+        <aside className="whatsapp-sidebar flex min-h-[320px] flex-col border-b border-border/80 bg-background-strong/70 lg:min-h-0 lg:h-full lg:border-r lg:border-b-0">
           <div className="border-b border-border/80 px-5 py-5">
             <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted">
               WhatsApp
             </p>
-            <div className="mt-3 flex items-end justify-between gap-4">
+            <div className="whatsapp-sidebar__toolbar mt-3 flex flex-col items-stretch gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h1 className="text-2xl font-semibold tracking-[-0.04em]">Chats</h1>
               </div>
@@ -334,7 +336,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                   setSearch("");
                   void loadConversations({ mode: "initial" });
                 }}
-                className="rounded-full border border-border bg-panel-strong px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted transition hover:border-accent/30 hover:text-accent"
+                className="whatsapp-refresh-button w-full rounded-full border border-border bg-panel-strong px-3 py-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted transition hover:border-accent/30 hover:text-accent sm:w-auto"
               >
                 {isRefreshingConversations ? "Actualizando" : "Recargar"}
               </button>
@@ -350,7 +352,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
             </label>
           </div>
 
-          <div className="scrollbar-thin flex-1 overflow-y-auto px-3 py-3 lg:min-h-0">
+          <div className="whatsapp-list-scroll scrollbar-thin flex-1 overflow-y-auto px-3 py-3 lg:min-h-0">
             {isLoadingConversationsInitial ? (
               <div className="space-y-3">
                 {Array.from({ length: 7 }).map((_, index) => (
@@ -424,8 +426,8 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
           </div>
         </aside>
 
-        <section className="flex min-h-[520px] flex-col bg-panel-strong/60 lg:min-h-0 lg:h-full">
-          <header className="border-b border-border/80 px-5 py-5 sm:px-7">
+        <section className="whatsapp-conversation flex min-h-[520px] flex-col bg-panel-strong/60 lg:min-h-0 lg:h-full">
+          <header className="whatsapp-conversation__header border-b border-border/80 px-5 py-5 sm:px-7">
             {selectedConversation ? (
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
@@ -446,6 +448,13 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                       : formatTimestamp(selectedConversation.lastMessageAt)}
                   </p>
                 </div>
+                <button
+                  type="button"
+                  className="whatsapp-back-button rounded-full border border-border bg-panel px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-muted transition hover:border-accent/30 hover:text-accent lg:hidden"
+                  onClick={() => setSelectedConversationId(null)}
+                >
+                  Volver a chats
+                </button>
               </div>
             ) : (
               <div>
@@ -507,7 +516,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
             <div
               ref={messageViewportRef}
               onScroll={handleMessagesScroll}
-              className="scrollbar-thin flex-1 overflow-y-auto px-5 py-5 sm:px-7 lg:min-h-0"
+              className="whatsapp-message-scroll scrollbar-thin flex-1 overflow-y-auto px-5 py-5 sm:px-7 lg:min-h-0"
             >
               <div className="space-y-4">
                 {messagesError ? (
