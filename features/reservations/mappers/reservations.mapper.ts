@@ -10,20 +10,18 @@ import type {
 } from "@/features/reservations/types/reservation.types";
 import type {
   ReservationManagementViewModel,
+  ReservationOverviewStat,
   ReservationOverviewViewModel,
 } from "@/features/reservations/types/reservation.view-model";
+import type { AgentReservationLimits } from "@/features/billing/model/agent-limits.types";
 
 const MOCK_CONVERSATIONS_IN_PROGRESS = "6";
 
 export function mapReservationsOverview(
   response: ReservationsByDateResponseDto,
   currentDate: Date,
+  agentLimits?: AgentReservationLimits | null,
 ): ReservationOverviewViewModel {
-  const occupancyPercentage = getOccupancyPercentage(
-    response.totalPeopleReserved,
-    response.totalCapacity,
-  );
-
   return {
     stats: [
       {
@@ -41,14 +39,35 @@ export function mapReservationsOverview(
         value: MOCK_CONVERSATIONS_IN_PROGRESS,
         detail: "",
       },
-      {
-        label: "Ocupacion general",
-        value: String(occupancyPercentage),
-        detail: "",
-        highlightSuffix: "%",
-      },
+      createAgentLimitsStat(agentLimits),
     ],
     hourBlocks: getVisibleHourBlocks(response, currentDate),
+  };
+}
+
+export function createEmptyReservationsOverview(
+  agentLimits?: AgentReservationLimits | null,
+): ReservationOverviewViewModel {
+  return {
+    stats: [
+      {
+        label: "Reservas tomadas",
+        value: "0",
+        detail: "",
+      },
+      {
+        label: "Capacidad total",
+        value: "0",
+        detail: "",
+      },
+      {
+        label: "Conversaciones en curso",
+        value: MOCK_CONVERSATIONS_IN_PROGRESS,
+        detail: "",
+      },
+      createAgentLimitsStat(agentLimits),
+    ],
+    hourBlocks: [],
   };
 }
 
@@ -237,6 +256,69 @@ function getOccupancyPercentage(reserved: number, totalCapacity: number) {
   const rawPercentage = (reserved / totalCapacity) * 100;
 
   return Math.min(100, Math.round(rawPercentage));
+}
+
+function createAgentLimitsStat(
+  agentLimits?: AgentReservationLimits | null,
+): ReservationOverviewStat {
+  if (!agentLimits || agentLimits.state === "unavailable") {
+    return {
+      label: "Limites del agente",
+      value: "-",
+      detail: getUnavailableAgentLimitsDetail(agentLimits?.unavailableReason),
+      rows: [
+        {
+          label: "Reservas tomadas",
+          value: "-",
+        },
+        {
+          label: "Disponibles",
+          value: "-",
+        },
+      ],
+    };
+  }
+
+  return {
+    label: "Limites del agente",
+    value: "",
+    detail: getAgentLimitsDetail(agentLimits),
+    rows: [
+      {
+        label: "Reservas tomadas",
+        value: String(agentLimits.used),
+      },
+      {
+        label: "Disponibles",
+        value:
+          agentLimits.state === "unlimited" ? "Sin limite" : String(agentLimits.remaining),
+      },
+    ],
+  };
+}
+
+function getAgentLimitsDetail(agentLimits: AgentReservationLimits) {
+  const planDetail = agentLimits.planName ? `Plan ${agentLimits.planName}` : "Plan";
+
+  return `Plan: ${planDetail} - Periodo: ${agentLimits.period}`;
+}
+
+function getUnavailableAgentLimitsDetail(
+  unavailableReason?: AgentReservationLimits["unavailableReason"],
+) {
+  if (unavailableReason === "missing_active_subscription") {
+    return "No hay una suscripcion activa para este cliente.";
+  }
+
+  if (unavailableReason === "inactive_plan") {
+    return "El plan configurado no esta activo.";
+  }
+
+  if (unavailableReason === "invalid_plan_limit") {
+    return "El limite del plan no esta configurado correctamente.";
+  }
+
+  return "No se pudo consultar el limite del plan.";
 }
 
 function normalizeHour(time: string) {

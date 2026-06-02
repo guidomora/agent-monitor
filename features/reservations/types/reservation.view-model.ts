@@ -5,6 +5,12 @@ export type ReservationOverviewStat = {
   value: string;
   detail: string;
   highlightSuffix?: string;
+  rows?: ReservationOverviewStatRow[];
+};
+
+export type ReservationOverviewStatRow = {
+  label: string;
+  value: string;
 };
 
 export type ReservationOverviewViewModel = {

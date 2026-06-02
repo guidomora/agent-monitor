@@ -24,18 +24,31 @@ export function ReservationsOverview({
         {overview.stats.map((stat) => (
           <article key={stat.label} className="stat-card">
             <span>{stat.label}</span>
-            <strong>
-              {stat.value}
-              {stat.highlightSuffix ? (
-                <span
-                  className="stat-card__suffix"
-                  style={{ color: "var(--accent-strong)" }}
-                >
-                  {stat.highlightSuffix}
-                </span>
-              ) : null}
-            </strong>
-            <p>{stat.detail}</p>
+            {stat.rows ? (
+              <dl className="stat-card__rows">
+                {stat.rows.map((row) => (
+                  <div key={row.label} className="stat-card__row">
+                    <dt className="stat-card__row-label">{row.label}</dt>
+                    <dd className="stat-card__row-value">{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <strong>
+                {stat.value}
+                {stat.highlightSuffix ? (
+                  <span
+                    className="stat-card__suffix"
+                    style={{ color: "var(--accent-strong)" }}
+                  >
+                    {stat.highlightSuffix}
+                  </span>
+                ) : null}
+              </strong>
+            )}
+            <p className={stat.rows ? "stat-card__detail--compact" : undefined}>
+              {stat.detail}
+            </p>
           </article>
         ))}
       </section>
