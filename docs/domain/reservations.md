@@ -16,6 +16,7 @@ Read this before changing reservation creation, editing, deletion, day status, s
 - Slot: an hour block returned by the backend with reserved capacity, available capacity, closed status, and optional reason.
 - Closed slot: a time range inside an open day where reservations should not be accepted.
 - Closure operation: backend operation that may queue customer notifications after closing a day or slot.
+- Agent limits: monthly WhatsApp reservation quota for the current billing plan. The home dashboard shows reservations already taken by the agent and remaining availability for the current period.
 
 ## Current DTO fields
 
@@ -42,6 +43,8 @@ Reservation API responses should be mapped before rendering. The main mapper is 
 
 Current UI models group reservations by normalized hour and combine reservation data with slot capacity and closed-state information.
 
+The home dashboard also includes agent limits from `features/billing`. Those values come from billing usage, not from daily reservation capacity, and should be mapped before rendering.
+
 ## Important constraints
 
 - Date strings are treated as calendar dates, usually in `yyyy-mm-dd` format.
@@ -54,4 +57,5 @@ Current UI models group reservations by normalized hour and combine reservation 
 - DTOs: `features/reservations/types/reservations.dto.ts`
 - View models: `features/reservations/types/reservation.view-model.ts`
 - Mapper: `features/reservations/mappers/reservations.mapper.ts`
+- Agent limits service: `features/billing/api/billing-usage.service.ts`
 - Manager UI: `features/reservations/components/reservations-manager.tsx`

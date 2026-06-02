@@ -1,47 +1,46 @@
 import { ReservationsOverview } from "@/features/reservations/components/reservations-overview";
+import { getWhatsappReservationQuota } from "@/features/billing/api/billing-usage.service";
 import { getReservationsByDate } from "@/features/reservations/api/reservations.service";
-import { mapReservationsOverview } from "@/features/reservations/mappers/reservations.mapper";
+import {
+  createEmptyReservationsOverview,
+  mapReservationsOverview,
+} from "@/features/reservations/mappers/reservations.mapper";
+import type { AgentReservationLimits } from "@/features/billing/model/agent-limits.types";
 import type { ReservationOverviewViewModel } from "@/features/reservations/types/reservation.view-model";
 
 export const dynamic = "force-dynamic";
+
+const DEFAULT_ACCOUNT_ID = "default";
 
 export default async function HomePage() {
   const currentDate = new Date();
   const formattedHeading = getFormattedHeading(currentDate);
   const date = getIsoDate(currentDate);
 
-  let overview: ReservationOverviewViewModel = {
-    stats: [
-      {
-        label: "Reservas tomadas",
-        value: "0",
-        detail: "",
-      },
-      {
-        label: "Capacidad total",
-        value: "0",
-        detail: "",
-      },
-      {
-        label: "Conversaciones en curso",
-        value: "6",
-        detail: "",
-      },
-      {
-        label: "Ocupacion general",
-        value: "0",
-        detail: "",
-        highlightSuffix: "%",
-      },
-    ],
-    hourBlocks: [],
-  };
+  let overview: ReservationOverviewViewModel = createEmptyReservationsOverview();
   let errorMessage: string | undefined;
+  let agentLimits: AgentReservationLimits | null = null;
 
   try {
-    const reservations = await getReservationsByDate(date);
+    const [reservationsResult, agentLimitsResult] = await Promise.allSettled([
+      getReservationsByDate(date),
+      getWhatsappReservationQuota(DEFAULT_ACCOUNT_ID),
+    ]);
 
-    overview = mapReservationsOverview(reservations, currentDate);
+    if (agentLimitsResult.status === "fulfilled") {
+      agentLimits = agentLimitsResult.value;
+      overview = createEmptyReservationsOverview(agentLimits);
+    }
+
+    if (reservationsResult.status === "fulfilled") {
+      overview = mapReservationsOverview(
+        reservationsResult.value,
+        currentDate,
+        agentLimits,
+      );
+    } else {
+      throw reservationsResult.reason;
+    }
   } catch (error) {
     errorMessage =
       error instanceof Error ? error.message : "No se pudo cargar el dashboard.";
