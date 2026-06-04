@@ -1,0 +1,541 @@
+@media (max-width: 920px) {
+  .reservation-edit-select__value,
+  .reservation-edit-select__option {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 1199px) {
+  .dashboard-grid,
+  .content-grid,
+  .crud-grid,
+  .management-grid,
+  .hero-card,
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid {
+    min-height: auto;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-sidebar {
+    justify-content: flex-start;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+@media (max-width: 920px) {
+  body {
+    background:
+      radial-gradient(circle at 88% 0%, rgba(193, 171, 255, 0.22), transparent 22%),
+      linear-gradient(180deg, #fbfbfe 0%, #f5f6fb 62%, #eff2f8 100%);
+  }
+
+  .dashboard-frame {
+    padding: 12px;
+  }
+
+  .dashboard-grid {
+    min-height: auto;
+    border-radius: 24px;
+  }
+
+  .dashboard-sidebar,
+  .dashboard-main,
+  .panel-card,
+  .hero-card,
+  .section-intro {
+    padding: 20px;
+  }
+
+  .dashboard-sidebar {
+    gap: 18px;
+  }
+
+  .dashboard-sidebar__brand {
+    gap: 8px;
+  }
+
+  .dashboard-sidebar__brand h1,
+  .hero-card h2,
+  .section-intro h2,
+  .panel-card h3 {
+    letter-spacing: 0;
+  }
+
+  .dashboard-sidebar__brand h1 {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .dashboard-sidebar__brand p {
+    line-height: 1.5;
+  }
+
+  .dashboard-main {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .dashboard-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .dashboard-nav__link {
+    min-width: 0;
+    min-height: 72px;
+    align-content: center;
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .dashboard-nav__link strong {
+    font-size: 0.9rem;
+    line-height: 1.15;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-nav__link p {
+    display: none;
+  }
+
+  .surface-stack {
+    gap: 16px;
+  }
+
+  .hero-card {
+    gap: 16px;
+  }
+
+  .hero-card h2,
+  .section-intro h2 {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .panel-card h3 {
+    font-size: 1.3rem;
+    line-height: 1.12;
+  }
+
+  .dashboard-eyebrow,
+  .stat-card span,
+  .schedule-date-field span,
+  .schedule-day-status__label,
+  .reservation-day-status-modal__stats span,
+  .day-status-badge,
+  .reservation-edit-modal__summary span,
+  .reservation-delete-modal__details span {
+    letter-spacing: 0.08em;
+  }
+
+  .hero-summary__trigger,
+  .occupancy-pill,
+  .day-status-badge {
+    letter-spacing: 0.08em;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .stat-card,
+  .note-card {
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .stat-card strong {
+    font-size: 2rem;
+    letter-spacing: 0;
+  }
+
+  .timeline-item,
+  .table-row {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-item {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .timeline-item__hour {
+    padding-bottom: 4px;
+  }
+
+  .schedule-toolbar,
+  .management-overview,
+  .reservation-card__actions,
+  .reservation-card,
+  .schedule-day-status,
+  .schedule-slot-status,
+  .reservation-day-status-modal__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-toolbar {
+    gap: 12px;
+  }
+
+  .schedule-date-field {
+    order: 1;
+  }
+
+  .schedule-toolbar__nav-button {
+    order: 2;
+  }
+
+  .schedule-toolbar__nav-button--next {
+    order: 3;
+  }
+
+  .schedule-toolbar__nav-button,
+  .schedule-toolbar__nav-button--next {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .schedule-day-status,
+  .schedule-slot-status {
+    align-items: stretch;
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .schedule-day-status__actions,
+  .schedule-slot-status__actions,
+  .reservation-card__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .schedule-day-status__actions,
+  .schedule-slot-status__actions {
+    width: 100%;
+  }
+
+  .schedule-day-status__actions .action-button,
+  .schedule-slot-status__actions .action-button {
+    width: 100%;
+  }
+
+  .reservation-card__body {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .reservation-card {
+    align-items: stretch;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .reservation-card__time {
+    font-size: 0.9rem;
+  }
+
+  .reservation-row {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .crud-form__row,
+  .crud-form__footer,
+  .crud-form__actions {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-summary,
+  .hero-actions,
+  .panel-card__header {
+    align-items: stretch;
+  }
+
+  .hero-summary,
+  .hero-actions {
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .hero-summary__trigger {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .modal-overlay {
+    padding: 16px;
+    align-items: start;
+    place-items: start center;
+  }
+
+  .closure-failure-toast-stack {
+    right: 16px;
+    bottom: 16px;
+    justify-items: stretch;
+  }
+
+  .closure-failure-toast {
+    width: 100%;
+    align-items: flex-start;
+    border-radius: 24px;
+    padding: 14px;
+  }
+
+  .closure-failure-toast__content {
+    display: grid;
+    gap: 4px;
+  }
+
+  .closure-failure-toast__content > strong {
+    white-space: normal;
+  }
+
+  .dates-modal {
+    width: 100%;
+    max-height: calc(100dvh - 32px);
+    padding: 20px;
+    border-radius: 24px;
+    overflow: auto;
+  }
+
+  .reservation-edit-modal__summary {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-delete-modal__details {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-edit-select__trigger {
+    min-height: 56px;
+    padding: 14px 16px;
+    border-radius: 18px;
+  }
+
+  .reservation-edit-select__time {
+    white-space: normal;
+  }
+
+  .reservation-edit-select__menu {
+    max-height: min(280px, calc(100dvh - 180px));
+  }
+
+  .whatsapp-shell {
+    min-height: auto !important;
+    border-radius: 24px;
+  }
+
+  .whatsapp-shell--list .whatsapp-conversation,
+  .whatsapp-shell--conversation .whatsapp-sidebar {
+    display: none;
+  }
+
+  .whatsapp-sidebar {
+    min-height: 0;
+    max-height: none;
+    border-bottom: 0;
+  }
+
+  .whatsapp-list-scroll {
+    min-height: min(520px, 62dvh);
+  }
+
+  .whatsapp-conversation {
+    min-height: min(680px, 82dvh);
+  }
+
+  .whatsapp-conversation__header > div {
+    align-items: flex-start;
+  }
+
+  .whatsapp-conversation__header h2 {
+    overflow-wrap: anywhere;
+  }
+
+  .whatsapp-back-button {
+    width: 100%;
+  }
+
+  .whatsapp-message-scroll article {
+    max-width: min(100%, 34rem);
+    overflow-wrap: anywhere;
+  }
+
+  .whatsapp-message-scroll article > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-frame {
+    padding: 8px;
+  }
+
+  .dashboard-grid {
+    border-radius: 20px;
+  }
+
+  .dashboard-sidebar,
+  .dashboard-main,
+  .panel-card,
+  .hero-card,
+  .section-intro {
+    padding: 16px;
+  }
+
+  .dashboard-main {
+    padding-inline: 8px;
+  }
+
+  .dashboard-grid * {
+    min-width: 0;
+  }
+
+  .dashboard-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-nav__link {
+    min-height: 0;
+    padding: 14px 16px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-card h2,
+  .section-intro h2 {
+    font-size: 1.34rem;
+    line-height: 1.08;
+    max-width: 22ch;
+  }
+
+  .dashboard-sidebar__brand p,
+  .hero-copy,
+  .section-intro p {
+    max-width: 28ch;
+    overflow-wrap: anywhere;
+  }
+
+  .whatsapp-sidebar__toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .whatsapp-refresh-button {
+    width: 100%;
+    min-height: 44px;
+    letter-spacing: 0.14em;
+  }
+
+  .panel-card h3 {
+    font-size: 1.18rem;
+  }
+
+  .panel-card__header,
+  .dates-modal__header {
+    flex-direction: column;
+  }
+
+  .dates-modal__close {
+    align-self: flex-end;
+  }
+
+  .schedule-day-status__actions,
+  .schedule-slot-status__actions,
+  .reservation-card__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .available-date-chip {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .action-button,
+  .action-button--compact {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .crud-form input,
+  .crud-form select,
+  .crud-form textarea,
+  .search-field input {
+    min-height: 52px;
+    border-radius: 16px;
+  }
+
+  .reservation-edit-modal__summary > div,
+  .reservation-delete-modal__summary,
+  .reservation-day-status-modal__stats > div {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .closure-failure-toast-stack {
+    right: 10px;
+    bottom: 10px;
+    width: calc(100vw - 20px);
+  }
+
+  .whatsapp-sidebar {
+    max-height: min(420px, 54dvh);
+  }
+
+  .whatsapp-conversation {
+    min-height: min(560px, 76dvh);
+  }
+}
+
+@media (max-width: 380px) {
+  .dashboard-frame {
+    padding: 0;
+  }
+
+  .dashboard-grid {
+    border-inline: 0;
+    border-radius: 0;
+  }
+
+  .dashboard-eyebrow,
+  .stat-card span,
+  .day-status-badge,
+  .occupancy-pill {
+    font-size: 10px;
+  }
+
+  .hero-card h2,
+  .section-intro h2 {
+    font-size: 1.18rem;
+    line-height: 1.08;
+  }
+
+  .modal-overlay {
+    padding: 8px;
+  }
+
+  .dates-modal {
+    max-height: calc(100dvh - 16px);
+    padding: 16px;
+    border-radius: 20px;
+  }
+}
+

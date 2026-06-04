@@ -1,0 +1,401 @@
+.schedule-toolbar,
+.management-overview,
+.reservation-card__actions,
+.reservation-card__meta,
+.reservation-inspector {
+  display: grid;
+  gap: 14px;
+}
+
+.schedule-toolbar {
+  grid-template-columns: max-content minmax(220px, 280px) max-content;
+  justify-content: start;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.schedule-date-field {
+  display: grid;
+  min-width: 0;
+  gap: 10px;
+}
+
+.schedule-toolbar__nav-button {
+  width: fit-content;
+  justify-self: start;
+}
+
+.schedule-toolbar__nav-button--next {
+  justify-self: start;
+}
+
+.schedule-date-field span,
+.management-overview__metric span,
+.reservation-card__meta span {
+  color: var(--muted);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.schedule-day-status {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(25, 31, 45, 0.06);
+  border-radius: 24px;
+  background:
+      linear-gradient(180deg, rgba(244, 246, 255, 0.88), rgba(255, 255, 255, 0.92)),
+      rgba(255, 255, 255, 0.9);
+}
+
+.schedule-slot-status {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(25, 31, 45, 0.06);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 249, 0.84), rgba(255, 255, 255, 0.92)),
+    rgba(255, 255, 255, 0.88);
+}
+
+.schedule-day-status__summary,
+.schedule-day-status__actions,
+.schedule-slot-status__summary,
+.schedule-slot-status__actions {
+  display: grid;
+  gap: 10px;
+}
+
+.schedule-day-status__label,
+.reservation-day-status-modal__stats span,
+.day-status-badge {
+  color: var(--muted);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.schedule-day-status__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.schedule-day-status__meta strong {
+  font-size: 1.15rem;
+  letter-spacing: 0;
+}
+
+.schedule-day-status__summary p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.schedule-slot-status__summary p,
+.timeline-item__reason {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.day-status-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+.day-status-badge.is-open {
+  border-color: rgba(74, 133, 20, 0.22);
+  background: rgba(151, 214, 52, 0.18);
+  color: #274d00;
+}
+
+.day-status-badge.is-closed {
+  border-color: rgba(217, 77, 97, 0.2);
+  background: rgba(217, 77, 97, 0.12);
+  color: #a02c40;
+}
+
+.schedule-date-field input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(25, 31, 45, 0.08);
+  border-radius: 18px;
+  background: rgba(247, 248, 252, 0.96);
+  color: var(--foreground);
+  outline: none;
+}
+
+.available-dates-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.available-dates-list--modal {
+  padding-right: 4px;
+}
+
+.available-date-chip {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(25, 31, 45, 0.08);
+  border-radius: 16px;
+  background: rgba(247, 248, 252, 0.96);
+  color: var(--foreground);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.available-date-chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(125, 66, 255, 0.2);
+}
+
+.available-date-chip.is-active {
+  border-color: rgba(125, 66, 255, 0.22);
+  background: rgba(125, 66, 255, 0.08);
+  color: #56339c;
+}
+
+.available-date-chip.is-closed {
+  border-style: dashed;
+  background: rgba(255, 244, 245, 0.96);
+}
+
+.management-overview {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 20px;
+}
+
+.management-overview__metric {
+  display: grid;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid rgba(25, 31, 45, 0.06);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.management-overview__metric strong,
+.reservation-inspector__hero strong {
+  font-size: 1.2rem;
+  letter-spacing: 0;
+}
+
+.management-overview__metric p,
+.reservation-inspector__hero p,
+.reservation-card__notes {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.reservation-card {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(25, 31, 45, 0.07);
+  border-radius: 24px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 249, 255, 0.94)),
+    rgba(255, 255, 255, 0.82);
+}
+
+.reservation-card--selected {
+  border-color: rgba(125, 66, 255, 0.24);
+  box-shadow: 0 14px 34px rgba(125, 66, 255, 0.08);
+}
+
+.reservation-card__body {
+  display: grid;
+  min-width: 0;
+  grid-template-columns:
+    84px
+    minmax(180px, 1.15fr)
+    120px
+    minmax(160px, 1fr)
+    minmax(130px, 0.9fr)
+    minmax(110px, 0.7fr)
+    minmax(160px, 0.9fr);
+  gap: 12px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.reservation-card__body strong {
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.reservation-card__body p {
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.reservation-card__time {
+  color: var(--foreground) !important;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 0.95rem;
+  letter-spacing: 0;
+}
+
+.reservation-card__actions {
+  grid-template-columns: repeat(2, minmax(110px, auto));
+}
+
+.reservation-inspector__hero {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border: 1px solid rgba(25, 31, 45, 0.06);
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(236, 239, 251, 0.92), rgba(255, 255, 255, 0.9));
+}
+
+.management-feedback {
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid rgba(125, 66, 255, 0.14);
+  border-radius: 20px;
+  background: rgba(125, 66, 255, 0.08);
+  color: #56339c;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.management-feedback--muted {
+  margin-bottom: 14px;
+  border-color: rgba(25, 31, 45, 0.08);
+  background: rgba(247, 248, 252, 0.8);
+  color: var(--muted);
+}
+
+.management-feedback--danger {
+  border-color: rgba(217, 77, 97, 0.16);
+  background: rgba(217, 77, 97, 0.1);
+  color: #a02c40;
+}
+
+.closure-failure-toast-stack {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 80;
+  display: grid;
+  justify-items: end;
+  gap: 10px;
+  width: min(760px, calc(100vw - 32px));
+}
+
+.closure-failure-toast {
+  display: flex;
+  width: min(760px, calc(100vw - 32px));
+  min-height: 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 14px 14px 22px;
+  border: 1px solid #a02c40;
+  border-radius: 999px;
+  background: #d94d61;
+  color: #ffffff;
+  box-shadow:
+    0 18px 44px rgba(93, 22, 36, 0.24),
+    0 0 0 6px #ffe5e9;
+  isolation: isolate;
+}
+
+.closure-failure-toast__content {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  line-height: 1.45;
+}
+
+.closure-failure-toast__content > strong {
+  color: #ffffff;
+  font-size: 0.98rem;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.closure-failure-toast__content p {
+  min-width: 0;
+  margin: 0;
+  color: #fff7f8;
+}
+
+.closure-failure-toast__content p strong {
+  color: #ffffff;
+}
+
+.closure-failure-toast__close {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ffffff;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #a02c40;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.closure-failure-toast__close:hover {
+  transform: translateY(-1px);
+  border-color: #ffffff;
+  background: #fff0f2;
+}
+

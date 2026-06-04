@@ -1,0 +1,134 @@
+.app-shell {
+  min-width: 0;
+  min-height: 100%;
+  width: 100%;
+  padding: 0;
+}
+
+.app-shell--embedded {
+  display: grid;
+  gap: 20px;
+}
+
+.dashboard-frame {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  padding: 20px;
+  overflow-x: hidden;
+}
+
+.dashboard-grid {
+  display: grid;
+  width: 100%;
+  max-width: 100%;
+  min-height: calc(100vh - 40px);
+  grid-template-columns: 320px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), transparent 22%),
+    rgba(255, 255, 255, 0.7);
+  box-shadow: var(--shadow);
+}
+
+.dashboard-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 28px;
+  padding: 28px;
+  border-right: 1px solid var(--border);
+  background:
+    radial-gradient(circle at top left, rgba(125, 66, 255, 0.1), transparent 32%),
+    linear-gradient(180deg, rgba(249, 250, 255, 0.98) 0%, rgba(239, 242, 248, 0.98) 100%);
+}
+
+.dashboard-sidebar__brand {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-sidebar__brand h1 {
+  margin: 0;
+  font-size: clamp(2rem, 2.3vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.dashboard-sidebar__brand p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.dashboard-main {
+  min-width: 0;
+  padding: 28px;
+}
+
+.dashboard-main > * {
+  max-width: 100%;
+}
+
+.dashboard-eyebrow {
+  margin: 0;
+  color: var(--accent-strong);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+}
+
+.dashboard-nav {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-nav__link {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  border: 1px solid rgba(25, 31, 45, 0.07);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.58);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.dashboard-nav__link:hover,
+.dashboard-nav__link.is-active {
+  transform: translateY(-1px);
+  border-color: rgba(125, 66, 255, 0.18);
+  background: linear-gradient(180deg, rgba(125, 66, 255, 0.08), rgba(255, 255, 255, 0.72));
+  box-shadow: 0 14px 30px rgba(154, 164, 190, 0.1);
+}
+
+.dashboard-nav__meta span {
+  color: var(--muted);
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.dashboard-nav__link strong {
+  font-size: 1.05rem;
+  letter-spacing: 0;
+}
+
+.dashboard-nav__link p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.surface-stack {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+

@@ -1,0 +1,40 @@
+:root {
+  color-scheme: light;
+  --background: #f7f7fb;
+  --background-strong: #eef0f8;
+  --panel: rgba(255, 255, 255, 0.9);
+  --panel-strong: #f5f6fb;
+  --panel-soft: rgba(255, 255, 255, 0.96);
+  --border: rgba(25, 31, 45, 0.08);
+  --foreground: #090b12;
+  --muted: #5f677d;
+  --accent: #c8ff2f;
+  --accent-strong: #7d42ff;
+  --accent-soft: rgba(125, 66, 255, 0.1);
+  --accent-contrast: #0b0f17;
+  --incoming: #dfe9ff;
+  --outgoing: #e4f4bf;
+  --danger: #d94d61;
+  --shadow: 0 20px 60px rgba(113, 124, 155, 0.12);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-strong: var(--background-strong);
+  --color-panel: var(--panel);
+  --color-panel-strong: var(--panel-strong);
+  --color-panel-soft: var(--panel-soft);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-contrast: var(--accent-contrast);
+  --color-incoming: var(--incoming);
+  --color-outgoing: var(--outgoing);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-instrument-sans);
+  --font-mono: var(--font-ibm-plex-mono);
+}
+

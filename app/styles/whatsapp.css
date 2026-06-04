@@ -1,0 +1,16 @@
+.whatsapp-shell,
+.whatsapp-sidebar,
+.whatsapp-conversation {
+  min-width: 0;
+}
+
+.whatsapp-list-scroll,
+.whatsapp-message-scroll {
+  min-width: 0;
+  overscroll-behavior: contain;
+}
+
+.whatsapp-back-button {
+  order: 3;
+}
+
