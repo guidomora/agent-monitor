@@ -5,6 +5,10 @@ type TwilioEnv = {
   authToken: string;
   whatsappNumber: string;
   messageLimit: number;
+  conversationPageSize: number;
+  messagePageSize: number;
+  twilioPageSize: number;
+  maxTwilioPagesPerRequest: number;
 };
 
 function normalizeWhatsappNumber(value: string) {
@@ -37,6 +41,22 @@ function parseMessageLimit() {
   return Math.min(value, 1000);
 }
 
+function parsePositiveIntegerEnv(name: string, fallback: number, max: number) {
+  const rawValue = process.env[name]?.trim();
+
+  if (!rawValue) {
+    return fallback;
+  }
+
+  const value = Number(rawValue);
+
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} debe ser un entero positivo.`);
+  }
+
+  return Math.min(value, max);
+}
+
 let cachedEnv: TwilioEnv | null = null;
 
 export function getTwilioEnv(): TwilioEnv {
@@ -51,6 +71,18 @@ export function getTwilioEnv(): TwilioEnv {
       readRequiredEnv("TWILIO_WHATSAPP_NUMBER"),
     ),
     messageLimit: parseMessageLimit(),
+    conversationPageSize: parsePositiveIntegerEnv(
+      "TWILIO_CONVERSATION_PAGE_SIZE",
+      20,
+      100,
+    ),
+    messagePageSize: parsePositiveIntegerEnv("TWILIO_CHAT_MESSAGE_PAGE_SIZE", 30, 100),
+    twilioPageSize: parsePositiveIntegerEnv("TWILIO_RAW_PAGE_SIZE", 50, 1000),
+    maxTwilioPagesPerRequest: parsePositiveIntegerEnv(
+      "TWILIO_MAX_PAGES_PER_REQUEST",
+      5,
+      20,
+    ),
   };
 
   return cachedEnv;

@@ -3,10 +3,16 @@ import type { ConversationMessage } from "@/features/whatsapp/model/message.type
 
 export type ConversationsResponse = {
   conversations: ConversationSummary[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  pageSize: number;
 };
 
 export type MessagesResponse = {
   messages: ConversationMessage[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  pageSize: number;
 };
 
 export type ApiErrorResponse = {
