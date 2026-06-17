@@ -303,14 +303,6 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
 
   return (
     <div className={embedded ? "app-shell app-shell--embedded" : "app-shell"}>
-      {embedded ? (
-        <header className="section-intro">
-          <div>
-            <h2>Mensajes</h2>
-            <p>Conversacion entre clientes y el Agente de WhatsApp</p>
-          </div>
-        </header>
-      ) : null}
       <div
         className={`whatsapp-shell ${
           selectedConversation ? "whatsapp-shell--conversation" : "whatsapp-shell--list"
@@ -322,10 +314,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
       >
         <aside className="whatsapp-sidebar flex min-h-[320px] flex-col border-b border-border/80 bg-background-strong/70 lg:min-h-0 lg:h-full lg:border-r lg:border-b-0">
           <div className="border-b border-border/80 px-5 py-5">
-            <p className="font-mono text-[11px] uppercase tracking-[0.28em] text-muted">
-              WhatsApp
-            </p>
-            <div className="whatsapp-sidebar__toolbar mt-3 flex flex-col items-stretch gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="whatsapp-sidebar__toolbar flex flex-col items-stretch gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h1 className="text-2xl font-semibold tracking-[-0.04em]">Chats</h1>
               </div>
