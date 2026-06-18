@@ -7,29 +7,13 @@ import {
   decodeMessagesCursor,
   encodePaginationCursor,
 } from "@/features/whatsapp/services/conversation-pagination-cursor";
-import type { PaginationMode } from "@/features/whatsapp/services/conversation-pagination-params";
-import type { ConversationSummary } from "@/features/whatsapp/model/conversation.types";
-import type { ConversationMessage } from "@/features/whatsapp/model/message.types";
-
-type ConversationPageResult = {
-  conversations: ConversationSummary[];
-  nextCursor: string | null;
-  hasMore: boolean;
-  pageSize: number;
-};
-
-type MessagePageResult = {
-  messages: ConversationMessage[];
-  nextCursor: string | null;
-  hasMore: boolean;
-  pageSize: number;
-};
-
-type PaginationOptions = {
-  limit?: number;
-  cursor?: string | null;
-  mode?: PaginationMode;
-};
+import type {
+  ConversationMessage,
+  ConversationPageResult,
+  ConversationSummary,
+  MessagePageResult,
+  PaginationOptions,
+} from "@/features/whatsapp/interfaces";
 
 function normalizeAddress(value: string | null | undefined) {
   if (!value) {

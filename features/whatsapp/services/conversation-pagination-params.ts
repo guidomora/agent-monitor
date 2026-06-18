@@ -1,13 +1,10 @@
 import "server-only";
 import { getTwilioEnv } from "@/infrastructure/twilio/twilio-env";
+import type {
+  PaginationMode,
+  ParsePaginationParamsOptions,
+} from "@/features/whatsapp/interfaces";
 import { PaginationRequestError } from "@/features/whatsapp/services/conversation-pagination-cursor";
-
-export type PaginationMode = "page" | "refresh";
-
-type ParsePaginationParamsOptions = {
-  defaultLimit: number;
-  maxLimit: number;
-};
 
 export function parsePaginationMode(value: string | null): PaginationMode {
   if (!value || value === "page") {

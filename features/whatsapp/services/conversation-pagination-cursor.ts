@@ -1,23 +1,5 @@
 import "server-only";
-import type { ConversationSummary } from "@/features/whatsapp/model/conversation.types";
-import type { ConversationMessage } from "@/features/whatsapp/model/message.types";
-
-export type ConversationCursorPayload = {
-  scope: "conversations";
-  nextPageUrl?: string;
-  bufferedConversations?: ConversationSummary[];
-};
-
-export type MessagesCursorPayload = {
-  scope: "messages";
-  conversationId: string;
-  nextPageUrl?: string;
-  bufferedMessages?: ConversationMessage[];
-};
-
-export type PaginationCursorPayload =
-  | ConversationCursorPayload
-  | MessagesCursorPayload;
+import type { PaginationCursorPayload } from "@/features/whatsapp/interfaces";
 
 export class PaginationRequestError extends Error {
   constructor(message: string) {

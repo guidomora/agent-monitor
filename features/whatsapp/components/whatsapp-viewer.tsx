@@ -12,11 +12,13 @@ import {
 } from "react";
 import type {
   ApiErrorResponse,
+  ConversationMessage,
+  ConversationSummary,
   ConversationsResponse,
+  LoadOptions,
   MessagesResponse,
-} from "@/features/whatsapp/api/conversations.api-types";
-import type { ConversationSummary } from "@/features/whatsapp/model/conversation.types";
-import type { ConversationMessage } from "@/features/whatsapp/model/message.types";
+  WhatsAppViewerProps,
+} from "@/features/whatsapp/interfaces";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
   dateStyle: "short",
@@ -164,15 +166,6 @@ function buildMessagesUrl(
 
   return `/api/conversations/${encodeURIComponent(conversationId)}?${params.toString()}`;
 }
-
-type WhatsAppViewerProps = {
-  embedded?: boolean;
-};
-
-type LoadOptions = {
-  mode?: "initial" | "refresh";
-  signal?: AbortSignal;
-};
 
 export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);

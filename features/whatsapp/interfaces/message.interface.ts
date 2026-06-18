@@ -1,6 +1,6 @@
 export type ConversationDirection = "inbound" | "outbound";
 
-export type ConversationMessage = {
+export interface ConversationMessage {
   id: string;
   conversationId: string;
   phoneNumber: string;
@@ -9,4 +9,4 @@ export type ConversationMessage = {
   sentAt: string | null;
   status: string | null;
   mediaCount: number;
-};
+}
