@@ -4,6 +4,7 @@ import {
   useCallback,
   useDeferredValue,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,11 +12,13 @@ import {
 } from "react";
 import type {
   ApiErrorResponse,
+  ConversationMessage,
+  ConversationSummary,
   ConversationsResponse,
+  LoadOptions,
   MessagesResponse,
-} from "@/features/whatsapp/api/conversations.api-types";
-import type { ConversationSummary } from "@/features/whatsapp/model/conversation.types";
-import type { ConversationMessage } from "@/features/whatsapp/model/message.types";
+  WhatsAppViewerProps,
+} from "@/features/whatsapp/interfaces";
 
 const dateFormatter = new Intl.DateTimeFormat("es-AR", {
   dateStyle: "short",
@@ -24,6 +27,8 @@ const dateFormatter = new Intl.DateTimeFormat("es-AR", {
 
 const POLLING_INTERVAL_MS = 10_000;
 const SCROLL_BOTTOM_THRESHOLD_PX = 96;
+const CONVERSATION_PAGE_SIZE = 20;
+const MESSAGE_PAGE_SIZE = 30;
 
 function formatTimestamp(value: string | null) {
   if (!value) {
@@ -64,31 +69,135 @@ async function readJson<T>(input: RequestInfo, init?: RequestInit) {
   return payload;
 }
 
-type WhatsAppViewerProps = {
-  embedded?: boolean;
-};
+function compareConversationsByLastActivity(
+  left: ConversationSummary,
+  right: ConversationSummary,
+) {
+  return (right.lastMessageAt ?? "").localeCompare(left.lastMessageAt ?? "");
+}
 
-type LoadOptions = {
-  mode?: "initial" | "refresh";
-  signal?: AbortSignal;
-};
+function compareMessagesBySentAt(
+  left: ConversationMessage,
+  right: ConversationMessage,
+) {
+  return (left.sentAt ?? "").localeCompare(right.sentAt ?? "");
+}
+
+function mergeConversations(
+  current: ConversationSummary[],
+  incoming: ConversationSummary[],
+) {
+  const conversationsById = new Map<string, ConversationSummary>();
+
+  for (const conversation of current) {
+    conversationsById.set(conversation.id, conversation);
+  }
+
+  for (const conversation of incoming) {
+    conversationsById.set(conversation.id, conversation);
+  }
+
+  return Array.from(conversationsById.values()).sort(
+    compareConversationsByLastActivity,
+  );
+}
+
+function mergeMessages(
+  current: ConversationMessage[],
+  incoming: ConversationMessage[],
+) {
+  const messagesById = new Map<string, ConversationMessage>();
+
+  for (const message of current) {
+    messagesById.set(message.id, message);
+  }
+
+  for (const message of incoming) {
+    messagesById.set(message.id, message);
+  }
+
+  return Array.from(messagesById.values()).sort(compareMessagesBySentAt);
+}
+
+function buildConversationsUrl({
+  cursor,
+  mode,
+}: {
+  cursor?: string | null;
+  mode?: "page" | "refresh";
+}) {
+  const params = new URLSearchParams({
+    limit: String(CONVERSATION_PAGE_SIZE),
+  });
+
+  if (cursor) {
+    params.set("cursor", cursor);
+  }
+
+  if (mode) {
+    params.set("mode", mode);
+  }
+
+  return `/api/conversations?${params.toString()}`;
+}
+
+function buildMessagesUrl(
+  conversationId: string,
+  {
+    cursor,
+    mode,
+  }: {
+    cursor?: string | null;
+    mode?: "page" | "refresh";
+  },
+) {
+  const params = new URLSearchParams({
+    limit: String(MESSAGE_PAGE_SIZE),
+  });
+
+  if (cursor) {
+    params.set("cursor", cursor);
+    params.set("direction", "older");
+  }
+
+  if (mode) {
+    params.set("mode", mode);
+  }
+
+  return `/api/conversations/${encodeURIComponent(conversationId)}?${params.toString()}`;
+}
 
 export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [conversationsNextCursor, setConversationsNextCursor] = useState<string | null>(
+    null,
+  );
+  const [hasMoreConversations, setHasMoreConversations] = useState(false);
   const [isLoadingConversationsInitial, setIsLoadingConversationsInitial] = useState(true);
   const [isRefreshingConversations, setIsRefreshingConversations] = useState(false);
+  const [isLoadingMoreConversations, setIsLoadingMoreConversations] = useState(false);
   const [conversationsError, setConversationsError] = useState<string | null>(null);
+  const [loadMoreConversationsError, setLoadMoreConversationsError] = useState<
+    string | null
+  >(null);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [olderMessagesNextCursor, setOlderMessagesNextCursor] = useState<string | null>(
+    null,
+  );
+  const [hasMoreOlderMessages, setHasMoreOlderMessages] = useState(false);
   const [isLoadingMessagesInitial, setIsLoadingMessagesInitial] = useState(false);
   const [isRefreshingMessages, setIsRefreshingMessages] = useState(false);
+  const [isLoadingOlderMessages, setIsLoadingOlderMessages] = useState(false);
   const [messagesError, setMessagesError] = useState<string | null>(null);
+  const [olderMessagesError, setOlderMessagesError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
   const messageViewportRef = useRef<HTMLDivElement | null>(null);
   const selectedConversationIdRef = useRef<string | null>(null);
   const lastRenderedConversationIdRef = useRef<string | null>(null);
   const shouldStickToBottomRef = useRef(true);
+  const pendingOlderMessagesScrollHeightRef = useRef<number | null>(null);
 
   const selectedConversation =
     conversations.find((conversation) => conversation.id === selectedConversationId) ?? null;
@@ -112,6 +221,7 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
 
   const loadConversations = useCallback(async ({ mode = "refresh", signal }: LoadOptions = {}) => {
     const isInitial = mode === "initial";
+    const isRefresh = mode === "refresh";
 
     if (isInitial) {
       setIsLoadingConversationsInitial(true);
@@ -120,12 +230,26 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
     }
 
     try {
-      const payload = await readJson<ConversationsResponse>("/api/conversations", {
-        signal,
-      });
+      const payload = await readJson<ConversationsResponse>(
+        buildConversationsUrl({
+          mode: isRefresh ? "refresh" : "page",
+        }),
+        {
+          signal,
+        },
+      );
 
-      setConversations(payload.conversations);
+      setConversations((current) =>
+        isRefresh
+          ? mergeConversations(current, payload.conversations)
+          : payload.conversations,
+      );
+      setConversationsNextCursor((current) =>
+        isRefresh && current ? current : payload.nextCursor,
+      );
+      setHasMoreConversations((current) => (isRefresh ? current : payload.hasMore));
       setConversationsError(null);
+      setLoadMoreConversationsError(null);
     } catch (error) {
       if (!isAbortError(error)) {
         setConversationsError(
@@ -143,9 +267,39 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
     }
   }, []);
 
+  const loadMoreConversations = useCallback(async () => {
+    if (!conversationsNextCursor || isLoadingMoreConversations) {
+      return;
+    }
+
+    setIsLoadingMoreConversations(true);
+    setLoadMoreConversationsError(null);
+
+    try {
+      const payload = await readJson<ConversationsResponse>(
+        buildConversationsUrl({
+          cursor: conversationsNextCursor,
+        }),
+      );
+
+      setConversations((current) =>
+        mergeConversations(current, payload.conversations),
+      );
+      setConversationsNextCursor(payload.nextCursor);
+      setHasMoreConversations(payload.hasMore);
+    } catch (error) {
+      setLoadMoreConversationsError(
+        error instanceof Error ? error.message : "No se pudieron cargar mas chats.",
+      );
+    } finally {
+      setIsLoadingMoreConversations(false);
+    }
+  }, [conversationsNextCursor, isLoadingMoreConversations]);
+
   const loadMessages = useCallback(
     async (conversationId: string, { mode = "refresh", signal }: LoadOptions = {}) => {
       const isInitial = mode === "initial";
+      const isRefresh = mode === "refresh";
 
       if (isInitial) {
         setIsLoadingMessagesInitial(true);
@@ -155,13 +309,24 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
 
       try {
         const payload = await readJson<MessagesResponse>(
-          `/api/conversations/${encodeURIComponent(conversationId)}`,
+          buildMessagesUrl(conversationId, {
+            mode: isRefresh ? "refresh" : "page",
+          }),
           { signal },
         );
 
         if (selectedConversationIdRef.current === conversationId) {
-          setMessages(payload.messages);
+          setMessages((current) =>
+            isRefresh ? mergeMessages(current, payload.messages) : payload.messages,
+          );
+          setOlderMessagesNextCursor((current) =>
+            isRefresh && current ? current : payload.nextCursor,
+          );
+          setHasMoreOlderMessages((current) =>
+            isRefresh ? current : payload.hasMore,
+          );
           setMessagesError(null);
+          setOlderMessagesError(null);
         }
       } catch (error) {
         if (!isAbortError(error) && selectedConversationIdRef.current === conversationId) {
@@ -188,6 +353,49 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
     [],
   );
 
+  const loadOlderMessages = useCallback(async () => {
+    const conversationId = selectedConversationIdRef.current;
+    const viewport = messageViewportRef.current;
+
+    if (
+      !conversationId ||
+      !olderMessagesNextCursor ||
+      isLoadingOlderMessages
+    ) {
+      return;
+    }
+
+    setIsLoadingOlderMessages(true);
+    setOlderMessagesError(null);
+
+    try {
+      const payload = await readJson<MessagesResponse>(
+        buildMessagesUrl(conversationId, {
+          cursor: olderMessagesNextCursor,
+        }),
+      );
+
+      if (selectedConversationIdRef.current === conversationId) {
+        pendingOlderMessagesScrollHeightRef.current = viewport?.scrollHeight ?? null;
+        setMessages((current) => mergeMessages(current, payload.messages));
+        setOlderMessagesNextCursor(payload.nextCursor);
+        setHasMoreOlderMessages(payload.hasMore);
+      }
+    } catch (error) {
+      if (selectedConversationIdRef.current === conversationId) {
+        setOlderMessagesError(
+          error instanceof Error
+            ? error.message
+            : "No se pudieron cargar mensajes anteriores.",
+        );
+      }
+    } finally {
+      if (selectedConversationIdRef.current === conversationId) {
+        setIsLoadingOlderMessages(false);
+      }
+    }
+  }, [isLoadingOlderMessages, olderMessagesNextCursor]);
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -201,13 +409,21 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
 
     if (!selectedConversationId) {
       setMessages([]);
+      setOlderMessagesNextCursor(null);
+      setHasMoreOlderMessages(false);
       setMessagesError(null);
+      setOlderMessagesError(null);
       setIsLoadingMessagesInitial(false);
       setIsRefreshingMessages(false);
+      setIsLoadingOlderMessages(false);
       return;
     }
 
     shouldStickToBottomRef.current = true;
+    pendingOlderMessagesScrollHeightRef.current = null;
+    setOlderMessagesNextCursor(null);
+    setHasMoreOlderMessages(false);
+    setOlderMessagesError(null);
 
     const controller = new AbortController();
 
@@ -270,10 +486,18 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
     };
   }, [loadConversations, loadMessages]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const viewport = messageViewportRef.current;
 
     if (!viewport) {
+      return;
+    }
+
+    const previousScrollHeight = pendingOlderMessagesScrollHeightRef.current;
+
+    if (previousScrollHeight !== null) {
+      viewport.scrollTop = viewport.scrollHeight - previousScrollHeight;
+      pendingOlderMessagesScrollHeightRef.current = null;
       return;
     }
 
@@ -361,8 +585,25 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                 <p className="mt-2 text-red-200/85">{conversationsError}</p>
               </div>
             ) : filteredConversations.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-border bg-panel-strong px-4 py-6 text-sm text-muted">
-                No hay conversaciones para mostrar con el filtro actual.
+              <div className="space-y-3">
+                <div className="rounded-3xl border border-dashed border-border bg-panel-strong px-4 py-6 text-sm text-muted">
+                  No hay conversaciones para mostrar con el filtro actual.
+                </div>
+                {!deferredSearch.trim() && hasMoreConversations ? (
+                  <button
+                    type="button"
+                    onClick={() => void loadMoreConversations()}
+                    disabled={isLoadingMoreConversations}
+                    className="w-full rounded-2xl border border-border bg-panel px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted transition hover:border-accent/30 hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isLoadingMoreConversations ? "Cargando..." : "Cargar mas chats"}
+                  </button>
+                ) : null}
+                {loadMoreConversationsError ? (
+                  <div className="rounded-2xl border border-red-500/25 bg-red-950/30 px-3 py-3 text-xs text-red-200">
+                    {loadMoreConversationsError}
+                  </div>
+                ) : null}
               </div>
             ) : (
               <div className="space-y-3">
@@ -410,6 +651,27 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
                     );
                   })}
                 </ul>
+                {loadMoreConversationsError ? (
+                  <div className="rounded-2xl border border-red-500/25 bg-red-950/30 px-3 py-3 text-xs text-red-200">
+                    {loadMoreConversationsError}
+                  </div>
+                ) : null}
+                {!deferredSearch.trim() ? (
+                  hasMoreConversations ? (
+                    <button
+                      type="button"
+                      onClick={() => void loadMoreConversations()}
+                      disabled={isLoadingMoreConversations}
+                      className="w-full rounded-2xl border border-border bg-panel px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted transition hover:border-accent/30 hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isLoadingMoreConversations ? "Cargando..." : "Cargar mas chats"}
+                    </button>
+                  ) : (
+                    <p className="rounded-2xl border border-border/70 bg-panel px-4 py-3 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
+                      No hay mas chats para cargar
+                    </p>
+                  )
+                ) : null}
               </div>
             )}
           </div>
@@ -508,6 +770,27 @@ export function WhatsAppViewer({ embedded = false }: WhatsAppViewerProps) {
               className="whatsapp-message-scroll scrollbar-thin flex-1 overflow-y-auto px-5 py-5 sm:px-7 lg:min-h-0"
             >
               <div className="space-y-4">
+                {hasMoreOlderMessages ? (
+                  <button
+                    type="button"
+                    onClick={() => void loadOlderMessages()}
+                    disabled={isLoadingOlderMessages}
+                    className="mx-auto block rounded-2xl border border-border bg-panel px-4 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-muted transition hover:border-accent/30 hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isLoadingOlderMessages
+                      ? "Cargando..."
+                      : "Cargar mensajes anteriores"}
+                  </button>
+                ) : (
+                  <p className="mx-auto max-w-md rounded-2xl border border-border/70 bg-panel px-4 py-3 text-center font-mono text-[11px] uppercase tracking-[0.14em] text-muted">
+                    Inicio del historial cargado
+                  </p>
+                )}
+                {olderMessagesError ? (
+                  <div className="mx-auto max-w-md rounded-2xl border border-red-500/25 bg-red-950/30 px-4 py-3 text-center text-xs text-red-200">
+                    {olderMessagesError}
+                  </div>
+                ) : null}
                 {messagesError ? (
                   <div className="mx-auto max-w-md rounded-2xl border border-red-500/25 bg-red-950/30 px-4 py-3 text-center text-xs text-red-200">
                     No se pudo actualizar la conversacion. Se muestran los ultimos mensajes cargados.

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getConversationMessages } from "@/features/whatsapp/services/conversations.service";
+import { parseMessagesPaginationParams } from "@/features/whatsapp/services/conversation-pagination-params";
 import { getErrorMessage, getErrorStatus } from "@/features/whatsapp/services/server-errors";
 
 export const runtime = "nodejs";
@@ -11,13 +12,18 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(_: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { conversationId } = await context.params;
 
   try {
-    const messages = await getConversationMessages(decodeURIComponent(conversationId));
+    const { searchParams } = new URL(request.url);
+    const pagination = parseMessagesPaginationParams(searchParams);
+    const messages = await getConversationMessages(
+      decodeURIComponent(conversationId),
+      pagination,
+    );
 
-    return NextResponse.json({ messages });
+    return NextResponse.json(messages);
   } catch (error) {
     return NextResponse.json(
       { error: getErrorMessage(error) },
