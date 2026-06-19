@@ -27,6 +27,7 @@ import type {
   ReservationClosedSlotTarget,
   ReservationSlotStatusMode,
 } from "@/features/reservations/types/closed-slot.types";
+import type { ClosureNotificationPollingHandle } from "@/features/reservations/types/closure-notification-polling.types";
 import type { ReservationDeleteTarget } from "@/features/reservations/types/reservation-delete.types";
 import type { ReservationEditTarget } from "@/features/reservations/types/reservation-edit.types";
 import type { ReservationManagementViewModel } from "@/features/reservations/types/reservation.view-model";
@@ -1173,11 +1174,6 @@ function getReopenSlotTarget(
     initialToTime,
   };
 }
-
-type ClosureNotificationPollingHandle = {
-  abortController: AbortController;
-  timeoutId: number | null;
-};
 
 function stopClosureNotificationPolling(
   pollingRef: MutableRefObject<ClosureNotificationPollingHandle | null>,

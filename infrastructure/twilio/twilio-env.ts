@@ -1,15 +1,5 @@
 import "server-only";
-
-type TwilioEnv = {
-  accountSid: string;
-  authToken: string;
-  whatsappNumber: string;
-  messageLimit: number;
-  conversationPageSize: number;
-  messagePageSize: number;
-  twilioPageSize: number;
-  maxTwilioPagesPerRequest: number;
-};
+import type { TwilioEnv } from "@/infrastructure/twilio/twilio-env.types";
 
 function normalizeWhatsappNumber(value: string) {
   return value.replace(/^whatsapp:/i, "").trim();

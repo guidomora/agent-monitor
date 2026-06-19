@@ -1,5 +1,6 @@
 import { AxiosError } from "axios";
 import { backendApi } from "@/infrastructure/http/backend-api";
+import type { BackendErrorPayload } from "@/infrastructure/http/backend-error.types";
 import type {
   AvailableReservationDatesResponseDto,
   CloseReservationDayRequestDto,
@@ -19,12 +20,6 @@ import type {
   UpdateReservationRequestDto,
   UpdateReservationResponseDto,
 } from "@/features/reservations/types/reservations.dto";
-
-type BackendErrorPayload = {
-  message?: string | string[];
-  error?: string;
-  statusCode?: number;
-};
 
 export async function getReservationsByDate(date: string) {
   try {

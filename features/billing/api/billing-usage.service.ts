@@ -1,13 +1,8 @@
 import { AxiosError } from "axios";
 import { backendApi } from "@/infrastructure/http/backend-api";
 import { mapAgentReservationLimits } from "@/features/billing/mappers/agent-limits.mapper";
+import type { BackendErrorPayload } from "@/infrastructure/http/backend-error.types";
 import type { BillingQuotaSummaryResponseDto } from "@/features/billing/api/billing-usage.dto";
-
-type BackendErrorPayload = {
-  message?: string | string[];
-  error?: string;
-  statusCode?: number;
-};
 
 export async function getWhatsappReservationQuota(accountId: string) {
   try {
